@@ -2,10 +2,10 @@ import {
   useLocation,
   useNavigate,
   useParams as useRouterParams,
-} from "react-router-dom";
+} from "@tanstack/react-router";
 
 export function useParams() {
-  return useRouterParams();
+  return useRouterParams({ strict: false });
 }
 
 export function usePathname() {
@@ -13,8 +13,8 @@ export function usePathname() {
 }
 
 export function useSearchParams() {
-  const { search } = useLocation();
-  return [new URLSearchParams(search)];
+  const { searchStr } = useLocation();
+  return [new URLSearchParams(searchStr || "")];
 }
 
 export function useRouter() {
@@ -22,10 +22,10 @@ export function useRouter() {
   const location = useLocation();
 
   return {
-    push: (href) => navigate(href),
-    replace: (href) => navigate(href, { replace: true }),
-    back: () => navigate(-1),
+    push: (href) => navigate({ to: href }),
+    replace: (href) => navigate({ to: href, replace: true }),
+    back: () => window.history.back(),
     pathname: location.pathname,
-    query: Object.fromEntries(new URLSearchParams(location.search)),
+    query: Object.fromEntries(new URLSearchParams(location.searchStr || "")),
   };
 }
