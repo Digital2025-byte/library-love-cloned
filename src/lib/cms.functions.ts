@@ -94,8 +94,9 @@ function toBlock(row: ComponentRow): CmsBlock {
     uid: row.id,
     sectionId: row.type,
     position: row.position,
-    style: (row.style ?? {}) as Record<string, unknown>,
-    content: (row.content ?? {}) as Record<string, unknown>,
+    style: (row.style ?? {}) as { [key: string]: Json },
+    content: (row.content ?? {}) as { [key: string]: Json },
+
   };
 }
 
