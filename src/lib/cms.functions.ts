@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
 export type CmsPageSummary = {
@@ -9,6 +10,24 @@ export type CmsPageSummary = {
   status: string;
   componentCount: number;
 };
+
+export type CmsBlock = {
+  uid: string;
+  sectionId: string;
+  position: number;
+  style: Record<string, unknown>;
+  content: Record<string, unknown>;
+};
+
+export type CmsPageDetail = {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  status: string;
+  blocks: CmsBlock[];
+};
+
 
 /** Publishable-key client for public, RLS-respecting reads. */
 function createPublicClient() {
