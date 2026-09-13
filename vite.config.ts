@@ -6,7 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import path from "path";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import { transformWithEsbuild } from "vite";
+import { transformWithOxc } from "vite";
 
 const src = path.resolve(import.meta.dirname, "src");
 
@@ -26,9 +26,9 @@ export default defineConfig({
             return null;
           }
 
-          return transformWithEsbuild(code, id, {
-            loader: "jsx",
-            jsx: "automatic",
+          return transformWithOxc(code, id, {
+            lang: "jsx",
+            jsx: { runtime: "automatic" },
           });
         },
       },
