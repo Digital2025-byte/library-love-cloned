@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { pagesQueryOptions } from "@/queries/pages";
 // @ts-expect-error - JS component from the cloned app
 import PagesListPage from "@/app/pages/PagesListPage";
 
@@ -17,5 +18,17 @@ export const Route = createFileRoute("/pages/")({
       },
     ],
   }),
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(pagesQueryOptions());
+  },
   component: PagesListPage,
+  pendingComponent: () => (
+    <div className="p-10 text-sm text-600">Loading pages…</div>
+  ),
+  errorComponent: ({ error }) => (
+    <div role="alert" className="p-10 text-sm text-600">
+      Couldn’t load pages: {error.message}
+    </div>
+  ),
+  notFoundComponent: () => <div className="p-10 text-sm text-600">No pages found.</div>,
 });
