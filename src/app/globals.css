@@ -1,0 +1,185 @@
+@import "tailwindcss";
+/* Preline UI */
+/* Force the day button (the clickable circle) to be a perfect flex-centered circle */
+
+/*
+ * Design tokens → Tailwind utilities (bg-*, text-*, border-*, etc.)
+ * Legacy var(--primary-1) / var(--text-600) kept in :root aliases below for raw CSS & arbitrary values.
+ */
+@theme {
+  /* Base */
+  --color-background: #ffffff;
+  --color-foreground: #171717;
+
+  --color-main: #054e72;
+  --color-main-light: #245673;
+  --color-secondary: #baa981;
+  --color-secondary-light: #e8e0c4;
+  
+
+  --color-accent-1: #b5a684;
+  --color-surface-1: #f5f5f5;
+  --color-surface-2: #e5e5e3;
+  --color-surface-2: #e5e5e3;
+  --color-icon: #6a7282;
+
+  /* Brand / primary scale */
+  --color-primary-1: #006080;
+  --color-primary-2: #baa981;
+  --color-primary-3: #d0c29c;
+  --color-secondary-1: #5393c8;
+  --color-secondary-2: #01263b;
+  --color-primary-100: #a6cfe0;
+  --color-primary-200: #8cb9c8;
+  --color-primary-300: #73a4af;
+  --color-primary-400: #618d98;
+  --color-primary-500: #4d6b7a;
+  --color-primary-600: #3a5a6b;
+  --color-primary-700: #26485b;
+  --color-primary-800: #13364b;
+  --color-btn: #3d3b35;
+
+  /* Sand / secondary scale */
+  --color-secondary-100: #f9f4e6;
+  --color-secondary-200: #f0e7d2;
+  --color-secondary-300: #e6dabc;
+  --color-secondary-400: #dbcca6;
+  --color-secondary-500: #d6c89f;
+  --color-secondary-600: #d3c499;
+  --color-secondary-700: #d0c29c;
+  --color-secondary-800: #c2b48b;
+  --color-secondary-900: #baa981;
+
+  /* Neutrals (shared bg + text scale — 50–300 surfaces, 400–900 type) */
+  --color-50: #fdfdfc;
+  --color-100: #f5f5f4;
+  --color-200: #e5e5e3;
+  --color-300: #d4d4d2;
+  --color-400: #afafac;
+  --color-500: #8a8a88;
+  --color-600: #5f5f5c;
+  --color-700: #3e3e3b;
+  --color-800: #282826;
+  --color-900: #1b1f23;
+
+  --color-alert: #b00300;
+  --color-green: #357b47;
+
+  --font-sans: var(--font-montserrat), "Montserrat", sans-serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+/* Legacy names used in var(--primary-1), arbitrary values, and third-party CSS */
+:root {
+  --background: var(--color-background);
+  --foreground: var(--color-foreground);
+
+  --primary-1: var(--color-primary-1);
+  --primary-2: var(--color-primary-2);
+  --primary-3: var(--color-primary-3);
+  --secondary-1: var(--color-secondary-1);
+  --secondary-2: var(--color-secondary-2);
+  --primary-1-rgb: 5, 78, 114;
+  --primary-100: var(--color-primary-100);
+  --primary-200: var(--color-primary-200);
+  --primary-300: var(--color-primary-300);
+  --primary-400: var(--color-primary-400);
+  --primary-500: var(--color-primary-500);
+  --primary-600: var(--color-primary-600);
+  --primary-700: var(--color-primary-700);
+  --primary-800: var(--color-primary-800);
+  --primary-btn: var(--color-btn);
+
+  --secondary-100: var(--color-secondary-100);
+  --secondary-200: var(--color-secondary-200);
+  --secondary-300: var(--color-secondary-300);
+  --secondary-400: var(--color-secondary-400);
+  --secondary-500: var(--color-secondary-500);
+  --secondary-600: var(--color-secondary-600);
+  --secondary-700: var(--color-secondary-700);
+  --secondary-800: var(--color-secondary-800);
+  --secondary-900: var(--color-secondary-900);
+
+  --text-100: var(--color-100);
+  --text-200: var(--color-200);
+  --text-300: var(--color-300);
+  --text-400: var(--color-400);
+  --text-500: var(--color-500);
+  --text-600: var(--color-600);
+  --text-700: var(--color-700);
+  --text-800: var(--color-800);
+  --text-900: var(--color-900);
+
+  --bg-50: var(--color-50);
+  --bg-100: var(--color-100);
+  --bg-200: var(--color-200);
+  --bg-300: var(--color-300);
+
+  --alert: var(--color-alert);
+  --green: var(--color-green);
+
+  --font-family-base: var(--font-montserrat), "Montserrat", sans-serif;
+  --font-montserrat: "Montserrat", sans-serif;
+  --font-cairo: "Cairo", sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+}
+
+/* EN: Montserrat | AR: Cairo — driven by document.lang from I18nProvider */
+html[lang="ar"] {
+  --font-family-base: var(--font-cairo), "Cairo", sans-serif;
+  --font-sans: var(--font-cairo), "Cairo", sans-serif;
+}
+
+html[lang="en"] {
+  --font-family-base: var(--font-montserrat), "Montserrat", sans-serif;
+  --font-sans: var(--font-montserrat), "Montserrat", sans-serif;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+div,
+span,
+a,
+li,
+td,
+th,
+label,
+input,
+textarea,
+select,
+button {
+  font-family: var(--font-family-base);
+}
+
+/* Latin tokens (IATA codes, etc.) — Montserrat even on Arabic pages */
+.font-en {
+  font-family: var(--font-montserrat), "Montserrat", sans-serif !important;
+}
+
+@layer base {
+  h1 {
+    @apply text-2xl font-semibold sm:text-3xl md:text-4xl lg:text-5xl;
+  }
+
+  h2 {
+    @apply text-xl font-semibold sm:text-2xl md:text-3xl lg:text-3xl;
+  }
+
+  h3 {
+    @apply text-base font-medium md:text-lg lg:text-lg;
+  }
+
+  h4 {
+    @apply text-sm font-medium sm:text-base;
+  }
+
+  p {
+    @apply text-sm sm:text-base;
+  }
+}

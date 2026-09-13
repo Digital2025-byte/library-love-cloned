@@ -1,0 +1,167 @@
+/* Viewport clips the marquee track */
+.viewport {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.track {
+  display: flex;
+  flex-wrap: nowrap;
+  width: max-content;
+  gap: var(--card-gap, 1.5rem);
+  will-change: transform;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-duration: var(--duration, 15s);
+}
+
+.left {
+  animation-name: marqueeLeft;
+}
+
+.right {
+  animation-name: marqueeRight;
+}
+
+@keyframes marqueeLeft {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marqueeRight {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.card {
+  position: relative;
+  width: var(--w, 320px);
+  height: var(--h, 350px);
+  border-radius: var(--card-radius, 1.125rem);
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.image {
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.cardDim {
+  position: absolute;
+  inset: 0;
+  background: rgb(0 0 0 / 0.6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--card-overlay, #000) 70%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.titleWrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1.25rem;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.sectionContainer {
+  position: relative;
+}
+
+.carouselContainer {
+  position: relative;
+  min-height: 25rem;
+}
+
+.hoverOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.showExplore:hover .hoverOverlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dimOnHover:hover .cardDim {
+  opacity: 1;
+}
+
+.pauseOnHover:hover .track {
+  animation-play-state: paused;
+}
+
+.exploreButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--explore-bg, #fff) 28%, transparent);
+  color: var(--explore-fg, #fff);
+  font-weight: 600;
+  padding: 0.9375rem;
+  width: 4.6875rem;
+  height: 4.6875rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--explore-fg, #fff) 35%, transparent);
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease,
+    transform 0.3s ease,
+    border-color 0.3s ease;
+  pointer-events: auto;
+}
+
+.exploreButton:hover {
+  background: color-mix(in srgb, var(--explore-bg, #fff) 40%, transparent);
+  color: var(--explore-fg, #fff);
+  border-color: color-mix(in srgb, var(--explore-fg, #fff) 50%, transparent);
+}
+
+.exploreButton:active {
+  transform: scale(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
