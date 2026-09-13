@@ -112,6 +112,16 @@ export default function PageBuilder({ page }) {
         </PageContentContainer>
       </div>
 
+      {createComponent.isError ? (
+        <PageContentContainer className="pt-4">
+          <p role="alert" className={`${typography.caption} text-red-600`}>
+            Couldn’t save the new component: {createComponent.error.message}
+          </p>
+        </PageContentContainer>
+      ) : null}
+
+
+
       {blocks.length === 0 ? (
         <EmptyPageState onAdd={() => setIsAddOpen(true)} />
       ) : (
