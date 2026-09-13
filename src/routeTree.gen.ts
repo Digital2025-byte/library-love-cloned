@@ -14,6 +14,7 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as IdeasSlugRouteImport } from './routes/ideas/$slug'
 import { Route as PagesIndexRouteImport } from './routes/pages/index'
 import { Route as PagesSlugRouteImport } from './routes/pages/$slug'
+import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-pages'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +41,11 @@ const PagesSlugRoute = PagesSlugRouteImport.update({
   path: '/pages/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicGetPagesRoute = ApiPublicGetPagesRouteImport.update({
+  id: '/api/public/get-pages',
+  path: '/api/public/get-pages',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/pages/': typeof PagesIndexRoute
+  '/api/public/get-pages': typeof ApiPublicGetPagesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/pages': typeof PagesIndexRoute
+  '/api/public/get-pages': typeof ApiPublicGetPagesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,12 +70,25 @@ export interface FileRoutesById {
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/pages/': typeof PagesIndexRoute
+  '/api/public/get-pages': typeof ApiPublicGetPagesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/docs/$slug' | '/ideas/$slug' | '/pages/$slug' | '/pages/'
+  fullPaths:
+    | '/'
+    | '/docs/$slug'
+    | '/ideas/$slug'
+    | '/pages/$slug'
+    | '/pages/'
+    | '/api/public/get-pages'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/docs/$slug' | '/ideas/$slug' | '/pages/$slug' | '/pages'
+  to:
+    | '/'
+    | '/docs/$slug'
+    | '/ideas/$slug'
+    | '/pages/$slug'
+    | '/pages'
+    | '/api/public/get-pages'
   id:
     | '__root__'
     | '/'
@@ -75,6 +96,7 @@ export interface FileRouteTypes {
     | '/ideas/$slug'
     | '/pages/$slug'
     | '/pages/'
+    | '/api/public/get-pages'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -83,6 +105,7 @@ export interface RootRouteChildren {
   IdeasSlugRoute: typeof IdeasSlugRoute
   PagesSlugRoute: typeof PagesSlugRoute
   PagesIndexRoute: typeof PagesIndexRoute
+  ApiPublicGetPagesRoute: typeof ApiPublicGetPagesRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -122,6 +145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PagesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/get-pages': {
+      id: '/api/public/get-pages'
+      path: '/api/public/get-pages'
+      fullPath: '/api/public/get-pages'
+      preLoaderRoute: typeof ApiPublicGetPagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -131,6 +161,7 @@ const rootRouteChildren: RootRouteChildren = {
   IdeasSlugRoute: IdeasSlugRoute,
   PagesSlugRoute: PagesSlugRoute,
   PagesIndexRoute: PagesIndexRoute,
+  ApiPublicGetPagesRoute: ApiPublicGetPagesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
