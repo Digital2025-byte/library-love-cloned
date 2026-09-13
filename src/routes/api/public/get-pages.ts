@@ -33,19 +33,66 @@ export function createCmsClient(request: Request) {
   });
 }
 
+type PageRow = {
+  id: string;
+  slug: string;
+  label: string;
+  description: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  page_components: { id: string }[] | null;
+};
+
 export const Route = createFileRoute("/api/public/get-pages")({
   server: {
     handlers: {
       OPTIONS: () => json({}),
       GET: async ({ request }) => {
+        const url = new URL(request.url);
+        const status = url.searchParams.get("status");
+
         const supabase = createCmsClient(request);
-        const { data, error } = await supabase
+        let query = supabase
           .from("pages")
-          .select("slug, label, description, status")
+          .select(
+            "id, slug, label, description, status, created_at, updated_at, page_components(id)"
+          )
           .order("slug", { ascending: true });
 
-        if (error) return json({ error: error.message }, 500);
-        return json(data ?? []);
+        if (status) query = query.eq("status", status);
+
+        const { data, error } = await query;
+
+        if (error)
+          return json(
+            { error: { message: error.message, code: "query_failed" } },
+            500
+          );
+
+        const rows = (data ?? []) as unknown as PageRow[];
+        const pages = rows.map((page) => ({
+          id: page.id,
+          slug: page.slug,
+          label: page.label,
+          description: page.description,
+          status: page.status,
+          isPublished: page.status === "published",
+          componentCount: page.page_components?.length ?? 0,
+          createdAt: page.created_at,
+          updatedAt: page.updated_at,
+        }));
+
+        return json({
+          data: pages,
+          meta: {
+            count: pages.length,
+            publishedCount: pages.filter((p) => p.isPublished).length,
+            draftCount: pages.filter((p) => !p.isPublished).length,
+            filters: { status: status || null },
+            generatedAt: new Date().toISOString(),
+          },
+        });
       },
     },
   },
