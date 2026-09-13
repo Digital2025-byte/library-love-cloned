@@ -145,8 +145,9 @@ export const createCmsComponent = createServerFn({ method: "POST" })
       slug: string;
       type: string;
       position?: number;
-      style?: Record<string, unknown>;
-      content?: Record<string, unknown>;
+      style?: { [key: string]: Json };
+      content?: { [key: string]: Json };
+
     }) => {
       if (!input?.slug) throw new Error("slug is required");
       if (!input?.type) throw new Error("type is required");
