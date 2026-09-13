@@ -34,7 +34,6 @@ export type Database = {
           content: Json
           created_at: string
           id: string
-          page_id: string
           position: number
           style: Json
           type: string
@@ -44,7 +43,6 @@ export type Database = {
           content?: Json
           created_at?: string
           id?: string
-          page_id: string
           position?: number
           style?: Json
           type: string
@@ -54,7 +52,6 @@ export type Database = {
           content?: Json
           created_at?: string
           id?: string
-          page_id?: string
           position?: number
           style?: Json
           type?: string
@@ -62,17 +59,52 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "components_page_id_fkey"
-            columns: ["page_id"]
-            isOneToOne: false
-            referencedRelation: "pages"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "components_type_fkey"
             columns: ["type"]
             isOneToOne: false
             referencedRelation: "component_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      page_components: {
+        Row: {
+          component_id: string
+          created_at: string
+          id: string
+          page_id: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          component_id: string
+          created_at?: string
+          id?: string
+          page_id: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          component_id?: string
+          created_at?: string
+          id?: string
+          page_id?: string
+          position?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "page_components_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "page_components_page_id_fkey"
+            columns: ["page_id"]
+            isOneToOne: false
+            referencedRelation: "pages"
             referencedColumns: ["id"]
           },
         ]
@@ -133,6 +165,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      component_is_public: { Args: { _component_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
