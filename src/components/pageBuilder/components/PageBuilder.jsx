@@ -5,12 +5,14 @@ import { PlusIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { typography } from "@/styles/typography";
 import PageContentContainer from "@/components/layout/PageContentContainer";
 import useCmsDemoData from "@/components/demo/useCmsDemoData";
+import { useCreateComponent } from "@/queries/components";
 import { getBlockEntry, REGISTRY_BLOCK_IDS } from "../registry/blockRegistry";
 import usePageBlocks from "../hooks/usePageBlocks";
 import PageBlockFrame from "./PageBlockFrame";
 import BlockInspectorDrawer from "./BlockInspectorDrawer";
 import AddBlockDialog from "./AddBlockDialog";
 import EmptyPageState from "./EmptyPageState";
+
 
 export default function PageBuilder({ page }) {
   // Preload demo data for every addable block so adding is instant.
