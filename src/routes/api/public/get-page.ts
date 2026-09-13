@@ -16,10 +16,22 @@ function json(body: unknown, status = 200) {
 type ComponentRow = {
   id: string;
   type: string;
-  position: number;
   style: unknown;
   content: unknown;
 };
+
+type PageComponentRow = {
+  position: number;
+  components: ComponentRow | ComponentRow[] | null;
+};
+
+/** PostgREST may type an embedded one-to-one row as an array. */
+function firstComponent(row: PageComponentRow): ComponentRow | null {
+  const c = row.components;
+  if (!c) return null;
+  return Array.isArray(c) ? (c[0] ?? null) : c;
+}
+
 
 export const Route = createFileRoute("/api/public/get-page")({
   server: {
@@ -33,7 +45,7 @@ export const Route = createFileRoute("/api/public/get-page")({
         const { data, error } = await supabase
           .from("pages")
           .select(
-            "slug, label, description, status, components(id, type, position, style, content)"
+            "slug, label, description, status, page_components(position, components(id, type, style, content))"
           )
           .eq("slug", slug)
           .maybeSingle();
@@ -41,7 +53,7 @@ export const Route = createFileRoute("/api/public/get-page")({
         if (error) return json({ error: error.message }, 500);
         if (!data) return json({ error: "Page not found" }, 404);
 
-        const components = ((data.components ?? []) as ComponentRow[])
+        const links = ((data.page_components ?? []) as PageComponentRow[])
           .slice()
           .sort((a, b) => a.position - b.position);
 
@@ -50,12 +62,21 @@ export const Route = createFileRoute("/api/public/get-page")({
           label: data.label,
           description: data.description,
           status: data.status,
-          blocks: components.map((c) => ({
-            uid: c.id,
-            sectionId: c.type,
-            style: c.style,
-            content: c.content,
-          })),
+          blocks: links.flatMap((link) => {
+            const component = firstComponent(link);
+            return component
+              ? [
+                  {
+                    uid: component.id,
+                    sectionId: component.type,
+                    position: link.position,
+                    style: component.style,
+                    content: component.content,
+                  },
+                ]
+              : [];
+          }),
+
         });
       },
     },
