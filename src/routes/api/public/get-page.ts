@@ -18,9 +18,13 @@ type ComponentRow = {
   type: string;
   style: unknown;
   content: unknown;
+  created_at: string;
+  updated_at: string;
+  component_types: { label: string } | { label: string }[] | null;
 };
 
 type PageComponentRow = {
+  id: string;
   position: number;
   components: ComponentRow | ComponentRow[] | null;
 };
@@ -32,6 +36,19 @@ function firstComponent(row: PageComponentRow): ComponentRow | null {
   return Array.isArray(c) ? (c[0] ?? null) : c;
 }
 
+function typeLabel(component: ComponentRow): string | null {
+  const t = component.component_types;
+  if (!t) return null;
+  const row = Array.isArray(t) ? t[0] : t;
+  return row?.label ?? null;
+}
+
+/** Language keys present in a component's content map, e.g. ["en","ar"]. */
+function languagesOf(content: unknown): string[] {
+  if (!content || typeof content !== "object" || Array.isArray(content))
+    return [];
+  return Object.keys(content as Record<string, unknown>);
+}
 
 export const Route = createFileRoute("/api/public/get-page")({
   server: {
@@ -39,44 +56,82 @@ export const Route = createFileRoute("/api/public/get-page")({
       OPTIONS: () => json({}),
       GET: async ({ request }) => {
         const slug = new URL(request.url).searchParams.get("slug");
-        if (!slug) return json({ error: "Missing required query param: slug" }, 400);
+        if (!slug)
+          return json(
+            {
+              error: {
+                message: "Missing required query param: slug",
+                code: "missing_slug",
+              },
+            },
+            400
+          );
 
         const supabase = createCmsClient(request);
         const { data, error } = await supabase
           .from("pages")
           .select(
-            "slug, label, description, status, page_components(position, components(id, type, style, content))"
+            "id, slug, label, description, status, created_at, updated_at, page_components(id, position, components(id, type, style, content, created_at, updated_at, component_types(label)))"
           )
           .eq("slug", slug)
           .maybeSingle();
 
-        if (error) return json({ error: error.message }, 500);
-        if (!data) return json({ error: "Page not found" }, 404);
+        if (error)
+          return json(
+            { error: { message: error.message, code: "query_failed" } },
+            500
+          );
+        if (!data)
+          return json(
+            {
+              error: {
+                message: `Page not found: ${slug}`,
+                code: "page_not_found",
+              },
+            },
+            404
+          );
 
         const links = ((data.page_components ?? []) as PageComponentRow[])
           .slice()
           .sort((a, b) => a.position - b.position);
 
+        const blocks = links.flatMap((link, index) => {
+          const component = firstComponent(link);
+          if (!component) return [];
+          return [
+            {
+              uid: component.id,
+              linkId: link.id,
+              sectionId: component.type,
+              sectionLabel: typeLabel(component),
+              position: link.position,
+              order: index,
+              languages: languagesOf(component.content),
+              style: component.style ?? {},
+              content: component.content ?? {},
+              createdAt: component.created_at,
+              updatedAt: component.updated_at,
+            },
+          ];
+        });
+
         return json({
+          id: data.id,
           slug: data.slug,
           label: data.label,
           description: data.description,
           status: data.status,
-          blocks: links.flatMap((link) => {
-            const component = firstComponent(link);
-            return component
-              ? [
-                  {
-                    uid: component.id,
-                    sectionId: component.type,
-                    position: link.position,
-                    style: component.style,
-                    content: component.content,
-                  },
-                ]
-              : [];
-          }),
-
+          isPublished: data.status === "published",
+          createdAt: data.created_at,
+          updatedAt: data.updated_at,
+          blocks,
+          meta: {
+            blockCount: blocks.length,
+            sectionIds: [...new Set(blocks.map((b) => b.sectionId))],
+            languages: [...new Set(blocks.flatMap((b) => b.languages))],
+            generatedAt: new Date().toISOString(),
+          },
         });
       },
     },
