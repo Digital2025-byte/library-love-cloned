@@ -22,8 +22,16 @@ type ComponentRow = {
 
 type PageComponentRow = {
   position: number;
-  components: ComponentRow | null;
+  components: ComponentRow | ComponentRow[] | null;
 };
+
+/** PostgREST may type an embedded one-to-one row as an array. */
+function firstComponent(row: PageComponentRow): ComponentRow | null {
+  const c = row.components;
+  if (!c) return null;
+  return Array.isArray(c) ? (c[0] ?? null) : c;
+}
+
 
 export const Route = createFileRoute("/api/public/get-page")({
   server: {
