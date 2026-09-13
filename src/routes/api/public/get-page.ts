@@ -62,19 +62,21 @@ export const Route = createFileRoute("/api/public/get-page")({
           label: data.label,
           description: data.description,
           status: data.status,
-          blocks: links.flatMap((link) =>
-            link.components
+          blocks: links.flatMap((link) => {
+            const component = firstComponent(link);
+            return component
               ? [
                   {
-                    uid: link.components.id,
-                    sectionId: link.components.type,
+                    uid: component.id,
+                    sectionId: component.type,
                     position: link.position,
-                    style: link.components.style,
-                    content: link.components.content,
+                    style: component.style,
+                    content: component.content,
                   },
                 ]
-              : []
-          ),
+              : [];
+          }),
+
         });
       },
     },
