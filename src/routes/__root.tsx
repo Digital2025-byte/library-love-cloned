@@ -9,8 +9,10 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
-import appCss from "../styles.css?url";
+import appCss from "../app/globals.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+// @ts-expect-error - JS provider from the cloned app
+import I18nProvider from "@/i18n/I18nProvider";
 
 function NotFoundComponent() {
   return (
