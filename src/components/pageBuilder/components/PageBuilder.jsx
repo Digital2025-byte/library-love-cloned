@@ -5,12 +5,14 @@ import { PlusIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { typography } from "@/styles/typography";
 import PageContentContainer from "@/components/layout/PageContentContainer";
 import useCmsDemoData from "@/components/demo/useCmsDemoData";
+import { useCreateComponent } from "@/queries/components";
 import { getBlockEntry, REGISTRY_BLOCK_IDS } from "../registry/blockRegistry";
 import usePageBlocks from "../hooks/usePageBlocks";
 import PageBlockFrame from "./PageBlockFrame";
 import BlockInspectorDrawer from "./BlockInspectorDrawer";
 import AddBlockDialog from "./AddBlockDialog";
 import EmptyPageState from "./EmptyPageState";
+
 
 export default function PageBuilder({ page }) {
   // Preload demo data for every addable block so adding is instant.
@@ -29,6 +31,7 @@ export default function PageBuilder({ page }) {
 
   const [activeUid, setActiveUid] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const createComponent = useCreateComponent();
 
   const activeBlock = useMemo(
     () => blocks.find((block) => block.uid === activeUid) || null,
@@ -38,11 +41,29 @@ export default function PageBuilder({ page }) {
   const activeContent = activeBlock?.content?.[lang];
 
   const handleAdd = (sectionId) => {
+    const entry = getBlockEntry(sectionId);
+    if (!entry) {
+      return;
+    }
+    const position = blocks.length;
     const uid = addBlock(sectionId);
     setIsAddOpen(false);
     if (uid) {
       setActiveUid(uid);
     }
+
+    // Persist the new instance on this page in the backend.
+    const data = ctx?.[entry.dataKey];
+    createComponent.mutate({
+      slug: page.slug,
+      type: sectionId,
+      position,
+      style: { ...entry.defaultStyle },
+      content:
+        data === undefined
+          ? {}
+          : { [lang]: entry.toEditorContent(data, lang) },
+    });
   };
 
   const handleRemove = (uid) => {
@@ -51,6 +72,7 @@ export default function PageBuilder({ page }) {
     }
     removeBlock(uid);
   };
+
 
   return (
     <div className="pb-24">
@@ -89,6 +111,16 @@ export default function PageBuilder({ page }) {
           </div>
         </PageContentContainer>
       </div>
+
+      {createComponent.isError ? (
+        <PageContentContainer className="pt-4">
+          <p role="alert" className={`${typography.caption} text-red-600`}>
+            Couldn’t save the new component: {createComponent.error.message}
+          </p>
+        </PageContentContainer>
+      ) : null}
+
+
 
       {blocks.length === 0 ? (
         <EmptyPageState onAdd={() => setIsAddOpen(true)} />

@@ -1,5 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
-import { getCmsPages, type CmsPageSummary } from "@/lib/cms.functions";
+import {
+  getCmsPage,
+  getCmsPages,
+  type CmsPageDetail,
+  type CmsPageSummary,
+} from "@/lib/cms.functions";
 
 export const cmsQueryKeys = {
   pages: ["cms", "pages"] as const,
@@ -12,3 +17,11 @@ export const pagesQueryOptions = () =>
     queryFn: () => getCmsPages(),
     staleTime: 30_000,
   });
+
+export const pageQueryOptions = (slug: string) =>
+  queryOptions<CmsPageDetail | null>({
+    queryKey: cmsQueryKeys.page(slug),
+    queryFn: () => getCmsPage({ data: { slug } }),
+    staleTime: 30_000,
+  });
+
