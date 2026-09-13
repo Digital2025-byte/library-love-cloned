@@ -31,6 +31,7 @@ export default function PageBuilder({ page }) {
 
   const [activeUid, setActiveUid] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const createComponent = useCreateComponent();
 
   const activeBlock = useMemo(
     () => blocks.find((block) => block.uid === activeUid) || null,
@@ -40,11 +41,29 @@ export default function PageBuilder({ page }) {
   const activeContent = activeBlock?.content?.[lang];
 
   const handleAdd = (sectionId) => {
+    const entry = getBlockEntry(sectionId);
+    if (!entry) {
+      return;
+    }
+    const position = blocks.length;
     const uid = addBlock(sectionId);
     setIsAddOpen(false);
     if (uid) {
       setActiveUid(uid);
     }
+
+    // Persist the new instance on this page in the backend.
+    const data = ctx?.[entry.dataKey];
+    createComponent.mutate({
+      slug: page.slug,
+      type: sectionId,
+      position,
+      style: { ...entry.defaultStyle },
+      content:
+        data === undefined
+          ? {}
+          : { [lang]: entry.toEditorContent(data, lang) },
+    });
   };
 
   const handleRemove = (uid) => {
@@ -53,6 +72,7 @@ export default function PageBuilder({ page }) {
     }
     removeBlock(uid);
   };
+
 
   return (
     <div className="pb-24">
