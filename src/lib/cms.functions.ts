@@ -94,8 +94,16 @@ type ComponentRow = {
 /** A page↔component link row with the component nested under it. */
 type PageComponentRow = {
   position: number;
-  components: ComponentRow | null;
+  components: ComponentRow | ComponentRow[] | null;
 };
+
+/** PostgREST may type an embedded one-to-one row as an array. */
+function firstComponent(row: PageComponentRow): ComponentRow | null {
+  const c = row.components;
+  if (!c) return null;
+  return Array.isArray(c) ? (c[0] ?? null) : c;
+}
+
 
 function toBlock(row: ComponentRow, position: number): CmsBlock {
   return {
