@@ -11,13 +11,22 @@ export type CmsPageSummary = {
   componentCount: number;
 };
 
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | Json[]
+  | { [key: string]: Json };
+
 export type CmsBlock = {
   uid: string;
   sectionId: string;
   position: number;
-  style: Record<string, unknown>;
-  content: Record<string, unknown>;
+  style: { [key: string]: Json };
+  content: { [key: string]: Json };
 };
+
 
 export type CmsPageDetail = {
   id: string;
