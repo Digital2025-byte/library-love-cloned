@@ -66,7 +66,7 @@ export const getCmsPages = createServerFn({ method: "GET" }).handler(
     const supabase = createPublicClient();
     const { data, error } = await supabase
       .from("pages")
-      .select("slug, label, description, status, components(id)")
+      .select("slug, label, description, status, page_components(id)")
       .order("slug", { ascending: true });
 
     if (error) throw new Error(error.message);
@@ -76,7 +76,10 @@ export const getCmsPages = createServerFn({ method: "GET" }).handler(
       label: page.label,
       description: page.description,
       status: page.status,
-      componentCount: Array.isArray(page.components) ? page.components.length : 0,
+      componentCount: Array.isArray(page.page_components)
+        ? page.page_components.length
+        : 0,
+
     }));
   },
 );
