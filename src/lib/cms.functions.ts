@@ -84,19 +84,23 @@ export const getCmsPages = createServerFn({ method: "GET" }).handler(
 type ComponentRow = {
   id: string;
   type: string;
-  position: number;
   style: unknown;
   content: unknown;
 };
 
-function toBlock(row: ComponentRow): CmsBlock {
+/** A page↔component link row with the component nested under it. */
+type PageComponentRow = {
+  position: number;
+  components: ComponentRow | null;
+};
+
+function toBlock(row: ComponentRow, position: number): CmsBlock {
   return {
     uid: row.id,
     sectionId: row.type,
-    position: row.position,
+    position,
     style: (row.style ?? {}) as { [key: string]: Json },
     content: (row.content ?? {}) as { [key: string]: Json },
-
   };
 }
 
@@ -111,7 +115,7 @@ export const getCmsPage = createServerFn({ method: "GET" })
     const { data: page, error } = await supabase
       .from("pages")
       .select(
-        "id, slug, label, description, status, components(id, type, position, style, content)",
+        "id, slug, label, description, status, page_components(position, components(id, type, style, content))",
       )
       .eq("slug", data.slug)
       .maybeSingle();
@@ -119,10 +123,12 @@ export const getCmsPage = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!page) return null;
 
-    const blocks = ((page.components ?? []) as ComponentRow[])
+    const blocks = ((page.page_components ?? []) as PageComponentRow[])
       .slice()
       .sort((a, b) => a.position - b.position)
-      .map(toBlock);
+      .flatMap((link) =>
+        link.components ? [toBlock(link.components, link.position)] : [],
+      );
 
     return {
       id: page.id,
@@ -135,8 +141,8 @@ export const getCmsPage = createServerFn({ method: "GET" })
   });
 
 /**
- * Create one component instance on a page. Admin-only: RLS rejects the insert
- * for anyone without the admin role.
+ * Create one component instance and link it to a page. Admin-only: RLS rejects
+ * the writes for anyone without the admin role.
  */
 export const createCmsComponent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -147,7 +153,6 @@ export const createCmsComponent = createServerFn({ method: "POST" })
       position?: number;
       style?: { [key: string]: Json };
       content?: { [key: string]: Json };
-
     }) => {
       if (!input?.slug) throw new Error("slug is required");
       if (!input?.type) throw new Error("type is required");
@@ -172,11 +177,11 @@ export const createCmsComponent = createServerFn({ method: "POST" })
     if (pageError) throw new Error(pageError.message);
     if (!page) throw new Error(`Page not found: ${data.slug}`);
 
-    // Append to the end unless an explicit position was requested.
+    // Append to the end of this page unless an explicit position was requested.
     let position = data.position;
     if (position === undefined) {
       const { data: last, error: lastError } = await supabase
-        .from("components")
+        .from("page_components")
         .select("position")
         .eq("page_id", page.id)
         .order("position", { ascending: false })
@@ -189,16 +194,23 @@ export const createCmsComponent = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase
       .from("components")
       .insert({
-        page_id: page.id,
         type: data.type,
         position,
         style: data.style as never,
         content: data.content as never,
       })
-      .select("id, type, position, style, content")
+      .select("id, type, style, content")
       .single();
 
     if (error) throw new Error(error.message);
-    return toBlock(row as ComponentRow);
+
+    const { error: linkError } = await supabase
+      .from("page_components")
+      .insert({ page_id: page.id, component_id: row.id, position });
+
+    if (linkError) throw new Error(linkError.message);
+
+    return toBlock(row as ComponentRow, position);
   });
+
 
