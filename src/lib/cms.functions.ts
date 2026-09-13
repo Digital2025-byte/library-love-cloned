@@ -137,9 +137,11 @@ export const getCmsPage = createServerFn({ method: "GET" })
     const blocks = ((page.page_components ?? []) as PageComponentRow[])
       .slice()
       .sort((a, b) => a.position - b.position)
-      .flatMap((link) =>
-        link.components ? [toBlock(link.components, link.position)] : [],
-      );
+      .flatMap((link) => {
+        const component = firstComponent(link);
+        return component ? [toBlock(component, link.position)] : [];
+      });
+
 
     return {
       id: page.id,
