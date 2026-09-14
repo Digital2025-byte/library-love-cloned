@@ -175,6 +175,7 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       page_is_published: { Args: { _page_id: string }; Returns: boolean }
+      ensure_first_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "editor"

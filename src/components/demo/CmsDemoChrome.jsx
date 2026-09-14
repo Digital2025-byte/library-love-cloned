@@ -6,6 +6,7 @@ import LanguageSwitcher from "@/i18n/LanguageSwitcher";
 import PageContentContainer from "@/components/layout/PageContentContainer";
 import ComponentNav, { COMPONENT_NAV_ITEMS } from "@/components/ui/ComponentNav";
 import IdeaNav from "./IdeaNav";
+import AuthNav from "@/components/auth/AuthNav";
 
 export default function CmsDemoChrome({
   sectionIds,
@@ -39,6 +40,7 @@ export default function CmsDemoChrome({
               <StackIcon size={18} weight="bold" aria-hidden />
               <span className="hidden sm:inline">Pages</span>
             </Link>
+            <AuthNav overlay={overlay} />
             <ComponentNav items={navItems} />
             <LanguageSwitcher />
           </div>

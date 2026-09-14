@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as IdeasSlugRouteImport } from './routes/ideas/$slug'
 import { Route as PagesIndexRouteImport } from './routes/pages/index'
@@ -20,6 +21,11 @@ import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-p
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsSlugRoute = DocsSlugRouteImport.update({
@@ -55,6 +61,7 @@ const ApiPublicGetPagesRoute = ApiPublicGetPagesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
@@ -64,6 +71,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
@@ -74,6 +82,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/login': typeof LoginRoute
   '/docs/$slug': typeof DocsSlugRoute
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
@@ -85,6 +94,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/login'
     | '/docs/$slug'
     | '/ideas/$slug'
     | '/pages/$slug'
@@ -94,6 +104,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/login'
     | '/docs/$slug'
     | '/ideas/$slug'
     | '/pages/$slug'
@@ -103,6 +114,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/login'
     | '/docs/$slug'
     | '/ideas/$slug'
     | '/pages/$slug'
@@ -113,6 +125,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LoginRoute: typeof LoginRoute
   DocsSlugRoute: typeof DocsSlugRoute
   IdeasSlugRoute: typeof IdeasSlugRoute
   PagesSlugRoute: typeof PagesSlugRoute
@@ -128,6 +141,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/$slug': {
@@ -177,6 +197,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LoginRoute: LoginRoute,
   DocsSlugRoute: DocsSlugRoute,
   IdeasSlugRoute: IdeasSlugRoute,
   PagesSlugRoute: PagesSlugRoute,
