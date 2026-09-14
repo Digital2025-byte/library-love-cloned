@@ -10,9 +10,10 @@ function blocksFromCms(blocks) {
   if (!Array.isArray(blocks)) {
     return [];
   }
-  return blocks.map((block) => ({
+  return blocks.map((block, index) => ({
     uid: block.uid,
     sectionId: block.sectionId,
+    position: typeof block.position === "number" ? block.position : index,
     style: { ...(block.style || {}) },
     content:
       block.content && typeof block.content === "object" && !Array.isArray(block.content)
@@ -90,16 +91,19 @@ export default function usePageBlocks({ slug, ctx, lang, initialBlocks }) {
       }
       const data = ctx?.[entry.dataKey];
       const uid = createBlockUid(sectionId);
-      const block = {
-        uid,
-        sectionId,
-        style: { ...entry.defaultStyle },
-        content:
-          data === undefined
-            ? {}
-            : { [lang]: entry.toEditorContent(data, lang) },
-      };
-      setBlocks((prev) => [...prev, block]);
+      setBlocks((prev) => {
+        const block = {
+          uid,
+          sectionId,
+          position: prev.length,
+          style: { ...entry.defaultStyle },
+          content:
+            data === undefined
+              ? {}
+              : { [lang]: entry.toEditorContent(data, lang) },
+        };
+        return [...prev, block];
+      });
       return uid;
     },
     [ctx, lang]
@@ -146,6 +150,14 @@ export default function usePageBlocks({ slug, ctx, lang, initialBlocks }) {
     );
   }, []);
 
+  const replaceBlock = useCallback((fromUid, next) => {
+    setBlocks((prev) =>
+      prev.map((block) =>
+        block.uid === fromUid ? { ...block, ...next } : block
+      )
+    );
+  }, []);
+
   const resetPage = useCallback(() => {
     clearPageBlocks(slug);
     setBlocks(blocksFromCms(initialBlocks));
@@ -158,6 +170,7 @@ export default function usePageBlocks({ slug, ctx, lang, initialBlocks }) {
     moveBlock,
     updateBlockContent,
     updateBlockStyle,
+    replaceBlock,
     resetPage,
   };
 }

@@ -1,11 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PlusIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import { typography } from "@/styles/typography";
 import PageContentContainer from "@/components/layout/PageContentContainer";
 import useCmsDemoData from "@/components/demo/useCmsDemoData";
-import { useCreateComponent } from "@/queries/components";
+import {
+  isCmsComponentId,
+  useCreateComponent,
+  useDeleteComponent,
+  useUpdateComponent,
+} from "@/queries/components";
 import { getBlockEntry, REGISTRY_BLOCK_IDS } from "../registry/blockRegistry";
 import usePageBlocks from "../hooks/usePageBlocks";
 import PageBlockFrame from "./PageBlockFrame";
@@ -13,6 +18,7 @@ import BlockInspectorDrawer from "./BlockInspectorDrawer";
 import AddBlockDialog from "./AddBlockDialog";
 import EmptyPageState from "./EmptyPageState";
 
+const SAVE_DEBOUNCE_MS = 500;
 
 export default function PageBuilder({ page }) {
   // Preload demo data for every addable block so adding is instant.
@@ -26,12 +32,17 @@ export default function PageBuilder({ page }) {
     moveBlock,
     updateBlockContent,
     updateBlockStyle,
+    replaceBlock,
     resetPage,
   } = usePageBlocks({ slug: page.slug, ctx, lang, initialBlocks: page.blocks });
 
   const [activeUid, setActiveUid] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const createComponent = useCreateComponent();
+  const updateComponent = useUpdateComponent();
+  const deleteComponent = useDeleteComponent();
+  const persistTimerRef = useRef(null);
+  const pendingUpdateRef = useRef(null);
 
   const activeBlock = useMemo(
     () => blocks.find((block) => block.uid === activeUid) || null,
@@ -39,6 +50,62 @@ export default function PageBuilder({ page }) {
   );
   const activeEntry = activeBlock ? getBlockEntry(activeBlock.sectionId) : null;
   const activeContent = activeBlock?.content?.[lang];
+
+  const flushComponentUpdate = () => {
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = null;
+    }
+    const pending = pendingUpdateRef.current;
+    if (!pending || !isCmsComponentId(pending.uid)) {
+      return;
+    }
+    pendingUpdateRef.current = null;
+    const payload = {
+      slug: pending.slug,
+      uid: pending.uid,
+    };
+    if (pending.type) payload.type = pending.type;
+    if (typeof pending.position === "number") payload.position = pending.position;
+    if (pending.style) payload.style = pending.style;
+    if (pending.content) payload.content = pending.content;
+    updateComponent.mutate(payload);
+  };
+
+  const queueComponentUpdate = (patch) => {
+    if (!patch?.uid || !isCmsComponentId(patch.uid)) {
+      return;
+    }
+    const prev =
+      pendingUpdateRef.current?.uid === patch.uid
+        ? pendingUpdateRef.current
+        : null;
+    pendingUpdateRef.current = {
+      slug: page.slug,
+      uid: patch.uid,
+      type: patch.sectionId ?? prev?.type,
+      position:
+        typeof patch.position === "number" ? patch.position : prev?.position,
+      style:
+        patch.style !== undefined ? { ...patch.style } : prev?.style,
+      content:
+        patch.content !== undefined
+          ? { ...(prev?.content || {}), ...patch.content }
+          : prev?.content,
+    };
+    if (persistTimerRef.current) {
+      clearTimeout(persistTimerRef.current);
+    }
+    persistTimerRef.current = setTimeout(flushComponentUpdate, SAVE_DEBOUNCE_MS);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleAdd = (sectionId) => {
     const entry = getBlockEntry(sectionId);
@@ -66,7 +133,16 @@ export default function PageBuilder({ page }) {
             : { [lang]: entry.toEditorContent(data, lang) },
       },
       {
-        onSuccess: (block) => setActiveUid(block.uid),
+        onSuccess: (block) => {
+          replaceBlock(uid, {
+            uid: block.uid,
+            sectionId: block.sectionId,
+            position: block.position,
+            style: block.style,
+            content: block.content,
+          });
+          setActiveUid(block.uid);
+        },
       },
     );
   };
@@ -75,9 +151,57 @@ export default function PageBuilder({ page }) {
     if (activeUid === uid) {
       setActiveUid(null);
     }
+    if (pendingUpdateRef.current?.uid === uid) {
+      pendingUpdateRef.current = null;
+      if (persistTimerRef.current) {
+        clearTimeout(persistTimerRef.current);
+        persistTimerRef.current = null;
+      }
+    }
     removeBlock(uid);
+    if (isCmsComponentId(uid)) {
+      deleteComponent.mutate({ slug: page.slug, uid });
+    }
   };
 
+  const handleContentChange = (content) => {
+    if (!activeBlock) {
+      return;
+    }
+    updateBlockContent(activeBlock.uid, content);
+    queueComponentUpdate({
+      uid: activeBlock.uid,
+      sectionId: activeBlock.sectionId,
+      position: activeBlock.position,
+      content: { ...activeBlock.content, [lang]: content },
+    });
+  };
+
+  const handleStyleChange = (style) => {
+    if (!activeBlock) {
+      return;
+    }
+    updateBlockStyle(activeBlock.uid, style);
+    queueComponentUpdate({
+      uid: activeBlock.uid,
+      sectionId: activeBlock.sectionId,
+      position: activeBlock.position,
+      style,
+    });
+  };
+
+  const handleInspectorClose = () => {
+    flushComponentUpdate();
+    setActiveUid(null);
+  };
+
+  const saveError = createComponent.isError
+    ? `Couldn’t save the new component: ${createComponent.error.message}`
+    : updateComponent.isError
+      ? `Couldn’t save component edits: ${updateComponent.error.message}`
+      : deleteComponent.isError
+        ? `Couldn’t remove the component: ${deleteComponent.error.message}`
+        : null;
 
   return (
     <div className="pb-24">
@@ -117,15 +241,17 @@ export default function PageBuilder({ page }) {
         </PageContentContainer>
       </div>
 
-      {createComponent.isError ? (
+      {saveError ? (
         <PageContentContainer className="pt-4">
           <p role="alert" className={`${typography.caption} text-red-600`}>
-            Couldn’t save the new component: {createComponent.error.message}
+            {saveError}
           </p>
         </PageContentContainer>
+      ) : updateComponent.isPending ? (
+        <PageContentContainer className="pt-4">
+          <p className={`${typography.caption} text-600`}>Saving…</p>
+        </PageContentContainer>
       ) : null}
-
-
 
       {blocks.length === 0 ? (
         <EmptyPageState onAdd={() => setIsAddOpen(true)} />
@@ -186,11 +312,9 @@ export default function PageBuilder({ page }) {
             lang
           )}
           style={activeBlock.style}
-          onContentChange={(content) =>
-            updateBlockContent(activeBlock.uid, content)
-          }
-          onStyleChange={(style) => updateBlockStyle(activeBlock.uid, style)}
-          onClose={() => setActiveUid(null)}
+          onContentChange={handleContentChange}
+          onStyleChange={handleStyleChange}
+          onClose={handleInspectorClose}
         />
       ) : null}
     </div>

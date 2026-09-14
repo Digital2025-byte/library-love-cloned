@@ -15,8 +15,11 @@ import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
 import { Route as IdeasSlugRouteImport } from './routes/ideas/$slug'
 import { Route as PagesIndexRouteImport } from './routes/pages/index'
 import { Route as PagesSlugRouteImport } from './routes/pages/$slug'
+import { Route as ApiPublicCreateComponentRouteImport } from './routes/api/public/create-component'
+import { Route as ApiPublicDeleteComponentRouteImport } from './routes/api/public/delete-component'
 import { Route as ApiPublicGetPageRouteImport } from './routes/api/public/get-page'
 import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-pages'
+import { Route as ApiPublicUpdateComponentRouteImport } from './routes/api/public/update-component'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -48,6 +51,18 @@ const PagesSlugRoute = PagesSlugRouteImport.update({
   path: '/pages/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCreateComponentRoute =
+  ApiPublicCreateComponentRouteImport.update({
+    id: '/api/public/create-component',
+    path: '/api/public/create-component',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDeleteComponentRoute =
+  ApiPublicDeleteComponentRouteImport.update({
+    id: '/api/public/delete-component',
+    path: '/api/public/delete-component',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicGetPageRoute = ApiPublicGetPageRouteImport.update({
   id: '/api/public/get-page',
   path: '/api/public/get-page',
@@ -58,6 +73,12 @@ const ApiPublicGetPagesRoute = ApiPublicGetPagesRouteImport.update({
   path: '/api/public/get-pages',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicUpdateComponentRoute =
+  ApiPublicUpdateComponentRouteImport.update({
+    id: '/api/public/update-component',
+    path: '/api/public/update-component',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,8 +87,11 @@ export interface FileRoutesByFullPath {
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/pages/': typeof PagesIndexRoute
+  '/api/public/create-component': typeof ApiPublicCreateComponentRoute
+  '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
+  '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,8 +100,11 @@ export interface FileRoutesByTo {
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/pages': typeof PagesIndexRoute
+  '/api/public/create-component': typeof ApiPublicCreateComponentRoute
+  '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
+  '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,8 +114,11 @@ export interface FileRoutesById {
   '/ideas/$slug': typeof IdeasSlugRoute
   '/pages/$slug': typeof PagesSlugRoute
   '/pages/': typeof PagesIndexRoute
+  '/api/public/create-component': typeof ApiPublicCreateComponentRoute
+  '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
+  '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -99,8 +129,11 @@ export interface FileRouteTypes {
     | '/ideas/$slug'
     | '/pages/$slug'
     | '/pages/'
+    | '/api/public/create-component'
+    | '/api/public/delete-component'
     | '/api/public/get-page'
     | '/api/public/get-pages'
+    | '/api/public/update-component'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,8 +142,11 @@ export interface FileRouteTypes {
     | '/ideas/$slug'
     | '/pages/$slug'
     | '/pages'
+    | '/api/public/create-component'
+    | '/api/public/delete-component'
     | '/api/public/get-page'
     | '/api/public/get-pages'
+    | '/api/public/update-component'
   id:
     | '__root__'
     | '/'
@@ -119,8 +155,11 @@ export interface FileRouteTypes {
     | '/ideas/$slug'
     | '/pages/$slug'
     | '/pages/'
+    | '/api/public/create-component'
+    | '/api/public/delete-component'
     | '/api/public/get-page'
     | '/api/public/get-pages'
+    | '/api/public/update-component'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -130,8 +169,11 @@ export interface RootRouteChildren {
   IdeasSlugRoute: typeof IdeasSlugRoute
   PagesSlugRoute: typeof PagesSlugRoute
   PagesIndexRoute: typeof PagesIndexRoute
+  ApiPublicCreateComponentRoute: typeof ApiPublicCreateComponentRoute
+  ApiPublicDeleteComponentRoute: typeof ApiPublicDeleteComponentRoute
   ApiPublicGetPageRoute: typeof ApiPublicGetPageRoute
   ApiPublicGetPagesRoute: typeof ApiPublicGetPagesRoute
+  ApiPublicUpdateComponentRoute: typeof ApiPublicUpdateComponentRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -178,6 +220,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PagesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/create-component': {
+      id: '/api/public/create-component'
+      path: '/api/public/create-component'
+      fullPath: '/api/public/create-component'
+      preLoaderRoute: typeof ApiPublicCreateComponentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/delete-component': {
+      id: '/api/public/delete-component'
+      path: '/api/public/delete-component'
+      fullPath: '/api/public/delete-component'
+      preLoaderRoute: typeof ApiPublicDeleteComponentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/get-page': {
       id: '/api/public/get-page'
       path: '/api/public/get-page'
@@ -192,6 +248,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGetPagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/update-component': {
+      id: '/api/public/update-component'
+      path: '/api/public/update-component'
+      fullPath: '/api/public/update-component'
+      preLoaderRoute: typeof ApiPublicUpdateComponentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -202,8 +265,11 @@ const rootRouteChildren: RootRouteChildren = {
   IdeasSlugRoute: IdeasSlugRoute,
   PagesSlugRoute: PagesSlugRoute,
   PagesIndexRoute: PagesIndexRoute,
+  ApiPublicCreateComponentRoute: ApiPublicCreateComponentRoute,
+  ApiPublicDeleteComponentRoute: ApiPublicDeleteComponentRoute,
   ApiPublicGetPageRoute: ApiPublicGetPageRoute,
   ApiPublicGetPagesRoute: ApiPublicGetPagesRoute,
+  ApiPublicUpdateComponentRoute: ApiPublicUpdateComponentRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
