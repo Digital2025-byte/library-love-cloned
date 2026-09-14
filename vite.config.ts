@@ -32,15 +32,58 @@ export default defineConfig({
           });
         },
       },
+      {
+        // Must run before the `@` alias: on Windows, Tabs/Drawer/Button
+        // collide with shadcn's tabs.tsx, drawer.tsx, and button.tsx.
+        name: "cms-ui-case-aliases",
+        enforce: "pre",
+        resolveId(id: string) {
+          const map: Record<string, string> = {
+            "@/components/ui/Tabs": path.resolve(src, "components/ui/Tabs/index.jsx"),
+            "@/components/ui/Drawer": path.resolve(src, "components/ui/Drawer/index.jsx"),
+            "@/components/ui/Button": path.resolve(src, "components/ui/Button.jsx"),
+          };
+          return map[id] ?? null;
+        },
+      },
     ],
     resolve: {
-      alias: {
-        "next/image": path.resolve(src, "lib/next-compat/image.jsx"),
-        "next/link": path.resolve(src, "lib/next-compat/link.jsx"),
-        "next/navigation": path.resolve(src, "lib/next-compat/navigation.js"),
-        "next/dynamic": path.resolve(src, "lib/next-compat/dynamic.jsx"),
-        "next/font/google": path.resolve(src, "lib/next-compat/font-google.js"),
-      },
+      alias: [
+        // Windows is case-insensitive: "@/components/ui/Tabs" would otherwise
+        // resolve to shadcn's tabs.tsx instead of the CMS Tabs folder.
+        {
+          find: /^@\/components\/ui\/Tabs$/,
+          replacement: path.resolve(src, "components/ui/Tabs/index.jsx"),
+        },
+        {
+          find: /^@\/components\/ui\/Drawer$/,
+          replacement: path.resolve(src, "components/ui/Drawer/index.jsx"),
+        },
+        {
+          find: /^@\/components\/ui\/Button$/,
+          replacement: path.resolve(src, "components/ui/Button.jsx"),
+        },
+        {
+          find: "next/image",
+          replacement: path.resolve(src, "lib/next-compat/image.jsx"),
+        },
+        {
+          find: "next/link",
+          replacement: path.resolve(src, "lib/next-compat/link.jsx"),
+        },
+        {
+          find: "next/navigation",
+          replacement: path.resolve(src, "lib/next-compat/navigation.js"),
+        },
+        {
+          find: "next/dynamic",
+          replacement: path.resolve(src, "lib/next-compat/dynamic.jsx"),
+        },
+        {
+          find: "next/font/google",
+          replacement: path.resolve(src, "lib/next-compat/font-google.js"),
+        },
+      ],
     },
   },
 });
