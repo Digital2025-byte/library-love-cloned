@@ -1,8 +1,8 @@
-import { PlusIcon, StackIcon } from "@phosphor-icons/react";
+import { PlusIcon, StackIcon, CircleNotchIcon } from "@phosphor-icons/react";
 import { typography } from "@/styles/typography";
 import PageContentContainer from "@/components/layout/PageContentContainer";
 
-export default function EmptyPageState({ onAdd }) {
+export default function EmptyPageState({ onAdd, isCreating = false }) {
   return (
     <PageContentContainer className="py-20">
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 text-center">
@@ -18,10 +18,16 @@ export default function EmptyPageState({ onAdd }) {
         <button
           type="button"
           onClick={onAdd}
-          className={`${typography.button} inline-flex items-center gap-2 rounded-lg bg-primary-1 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-2`}
+          disabled={isCreating}
+          aria-busy={isCreating || undefined}
+          className={`${typography.button} inline-flex items-center gap-2 rounded-lg bg-primary-1 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-2 disabled:cursor-wait disabled:opacity-60`}
         >
-          <PlusIcon size={18} weight="bold" aria-hidden />
-          Add component
+          {isCreating ? (
+            <CircleNotchIcon size={18} weight="bold" className="animate-spin" aria-hidden />
+          ) : (
+            <PlusIcon size={18} weight="bold" aria-hidden />
+          )}
+          {isCreating ? "Adding…" : "Add component"}
         </button>
       </div>
     </PageContentContainer>

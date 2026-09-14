@@ -22,6 +22,7 @@ export default function PageBlockFrame({
   isFirst,
   isLast,
   isActive,
+  isRemoving = false,
   onEdit,
   onMoveUp,
   onMoveDown,
@@ -39,6 +40,7 @@ export default function PageBlockFrame({
         label={entry.label}
         isFirst={isFirst}
         isLast={isLast}
+        isRemoving={isRemoving}
         onEdit={onEdit}
         onMoveUp={onMoveUp}
         onMoveDown={onMoveDown}

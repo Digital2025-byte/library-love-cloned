@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { PlusIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
+import { useMemo, useState } from "react";
+import { PlusIcon, ArrowCounterClockwiseIcon, CircleNotchIcon } from "@phosphor-icons/react";
 import { typography } from "@/styles/typography";
 import PageContentContainer from "@/components/layout/PageContentContainer";
 import useCmsDemoData from "@/components/demo/useCmsDemoData";
@@ -17,8 +17,6 @@ import PageBlockFrame from "./PageBlockFrame";
 import BlockInspectorDrawer from "./BlockInspectorDrawer";
 import AddBlockDialog from "./AddBlockDialog";
 import EmptyPageState from "./EmptyPageState";
-
-const SAVE_DEBOUNCE_MS = 500;
 
 export default function PageBuilder({ page }) {
   // Preload demo data for every addable block so adding is instant.
@@ -41,8 +39,6 @@ export default function PageBuilder({ page }) {
   const createComponent = useCreateComponent();
   const updateComponent = useUpdateComponent();
   const deleteComponent = useDeleteComponent();
-  const persistTimerRef = useRef(null);
-  const pendingUpdateRef = useRef(null);
 
   const activeBlock = useMemo(
     () => blocks.find((block) => block.uid === activeUid) || null,
@@ -51,75 +47,20 @@ export default function PageBuilder({ page }) {
   const activeEntry = activeBlock ? getBlockEntry(activeBlock.sectionId) : null;
   const activeContent = activeBlock?.content?.[lang];
 
-  const flushComponentUpdate = () => {
-    if (persistTimerRef.current) {
-      clearTimeout(persistTimerRef.current);
-      persistTimerRef.current = null;
-    }
-    const pending = pendingUpdateRef.current;
-    if (!pending || !isCmsComponentId(pending.uid)) {
-      return;
-    }
-    pendingUpdateRef.current = null;
-    const payload = {
-      slug: pending.slug,
-      uid: pending.uid,
-    };
-    if (pending.type) payload.type = pending.type;
-    if (typeof pending.position === "number") payload.position = pending.position;
-    if (pending.style) payload.style = pending.style;
-    if (pending.content) payload.content = pending.content;
-    updateComponent.mutate(payload);
-  };
-
-  const queueComponentUpdate = (patch) => {
-    if (!patch?.uid || !isCmsComponentId(patch.uid)) {
-      return;
-    }
-    const prev =
-      pendingUpdateRef.current?.uid === patch.uid
-        ? pendingUpdateRef.current
-        : null;
-    pendingUpdateRef.current = {
-      slug: page.slug,
-      uid: patch.uid,
-      type: patch.sectionId ?? prev?.type,
-      position:
-        typeof patch.position === "number" ? patch.position : prev?.position,
-      style:
-        patch.style !== undefined ? { ...patch.style } : prev?.style,
-      content:
-        patch.content !== undefined
-          ? { ...(prev?.content || {}), ...patch.content }
-          : prev?.content,
-    };
-    if (persistTimerRef.current) {
-      clearTimeout(persistTimerRef.current);
-    }
-    persistTimerRef.current = setTimeout(flushComponentUpdate, SAVE_DEBOUNCE_MS);
-  };
-
-  useEffect(() => {
-    return () => {
-      if (persistTimerRef.current) {
-        clearTimeout(persistTimerRef.current);
-      }
-    };
-  }, []);
-
   const handleAdd = (sectionId) => {
+    if (createComponent.isPending) {
+      return;
+    }
     const entry = getBlockEntry(sectionId);
     if (!entry) {
       return;
     }
     const position = blocks.length;
     const uid = addBlock(sectionId);
-    setIsAddOpen(false);
     if (uid) {
       setActiveUid(uid);
     }
 
-    // Persist the new instance on this page in the backend.
     const data = ctx?.[entry.dataKey];
     createComponent.mutate(
       {
@@ -134,6 +75,7 @@ export default function PageBuilder({ page }) {
       },
       {
         onSuccess: (block) => {
+          setIsAddOpen(false);
           replaceBlock(uid, {
             uid: block.uid,
             sectionId: block.sectionId,
@@ -148,20 +90,58 @@ export default function PageBuilder({ page }) {
   };
 
   const handleRemove = (uid) => {
-    if (activeUid === uid) {
-      setActiveUid(null);
+    if (deleteComponent.isPending) {
+      return;
     }
-    if (pendingUpdateRef.current?.uid === uid) {
-      pendingUpdateRef.current = null;
-      if (persistTimerRef.current) {
-        clearTimeout(persistTimerRef.current);
-        persistTimerRef.current = null;
+    if (!isCmsComponentId(uid)) {
+      if (activeUid === uid) {
+        setActiveUid(null);
       }
+      removeBlock(uid);
+      return;
     }
-    removeBlock(uid);
-    if (isCmsComponentId(uid)) {
-      deleteComponent.mutate({ slug: page.slug, uid });
+    deleteComponent.mutate(
+      { slug: page.slug, uid },
+      {
+        onSuccess: () => {
+          if (activeUid === uid) {
+            setActiveUid(null);
+          }
+          removeBlock(uid);
+        },
+      },
+    );
+  };
+
+  const handleSubmitEdits = async () => {
+    if (!activeBlock) {
+      setActiveUid(null);
+      return;
     }
+    if (!isCmsComponentId(activeBlock.uid)) {
+      setActiveUid(null);
+      return;
+    }
+    try {
+      await updateComponent.mutateAsync({
+        slug: page.slug,
+        uid: activeBlock.uid,
+        type: activeBlock.sectionId,
+        position: activeBlock.position,
+        style: { ...(activeBlock.style || {}) },
+        content: { ...(activeBlock.content || {}) },
+      });
+      setActiveUid(null);
+    } catch {
+      // Keep the inspector open so the error banner is visible.
+    }
+  };
+
+  const handleDismissInspector = () => {
+    if (updateComponent.isPending) {
+      return;
+    }
+    setActiveUid(null);
   };
 
   const handleContentChange = (content) => {
@@ -169,12 +149,6 @@ export default function PageBuilder({ page }) {
       return;
     }
     updateBlockContent(activeBlock.uid, content);
-    queueComponentUpdate({
-      uid: activeBlock.uid,
-      sectionId: activeBlock.sectionId,
-      position: activeBlock.position,
-      content: { ...activeBlock.content, [lang]: content },
-    });
   };
 
   const handleStyleChange = (style) => {
@@ -182,18 +156,13 @@ export default function PageBuilder({ page }) {
       return;
     }
     updateBlockStyle(activeBlock.uid, style);
-    queueComponentUpdate({
-      uid: activeBlock.uid,
-      sectionId: activeBlock.sectionId,
-      position: activeBlock.position,
-      style,
-    });
   };
 
-  const handleInspectorClose = () => {
-    flushComponentUpdate();
-    setActiveUid(null);
-  };
+  const isCreating = createComponent.isPending;
+  const isSaving = updateComponent.isPending;
+  const removingUid = deleteComponent.isPending
+    ? deleteComponent.variables?.uid
+    : null;
 
   const saveError = createComponent.isError
     ? `Couldn’t save the new component: ${createComponent.error.message}`
@@ -232,10 +201,16 @@ export default function PageBuilder({ page }) {
             <button
               type="button"
               onClick={() => setIsAddOpen(true)}
-              className={`${typography.button} inline-flex items-center gap-2 rounded-lg bg-primary-1 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-2`}
+              disabled={isCreating}
+              aria-busy={isCreating || undefined}
+              className={`${typography.button} inline-flex items-center gap-2 rounded-lg bg-primary-1 px-4 py-2 font-semibold text-white transition-colors hover:bg-primary-2 disabled:cursor-wait disabled:opacity-60`}
             >
-              <PlusIcon size={18} weight="bold" aria-hidden />
-              Add component
+              {isCreating ? (
+                <CircleNotchIcon size={18} weight="bold" className="animate-spin" aria-hidden />
+              ) : (
+                <PlusIcon size={18} weight="bold" aria-hidden />
+              )}
+              {isCreating ? "Adding…" : "Add component"}
             </button>
           </div>
         </PageContentContainer>
@@ -247,14 +222,13 @@ export default function PageBuilder({ page }) {
             {saveError}
           </p>
         </PageContentContainer>
-      ) : updateComponent.isPending ? (
-        <PageContentContainer className="pt-4">
-          <p className={`${typography.caption} text-600`}>Saving…</p>
-        </PageContentContainer>
       ) : null}
 
       {blocks.length === 0 ? (
-        <EmptyPageState onAdd={() => setIsAddOpen(true)} />
+        <EmptyPageState
+          onAdd={() => setIsAddOpen(true)}
+          isCreating={isCreating}
+        />
       ) : (
         // Source help pages render on a bg-100 page, so white section cards
         // (JourneySection, HelpCategories, GetInTouch…) read as cards.
@@ -275,6 +249,7 @@ export default function PageBuilder({ page }) {
                 isFirst={index === 0}
                 isLast={index === blocks.length - 1}
                 isActive={block.uid === activeUid}
+                isRemoving={removingUid === block.uid}
                 onEdit={() => setActiveUid(block.uid)}
                 onMoveUp={() => moveBlock(block.uid, "up")}
                 onMoveDown={() => moveBlock(block.uid, "down")}
@@ -287,10 +262,16 @@ export default function PageBuilder({ page }) {
             <button
               type="button"
               onClick={() => setIsAddOpen(true)}
-              className={`${typography.button} flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-300 py-5 font-medium text-600 transition-colors hover:border-primary-1 hover:text-primary-1`}
+              disabled={isCreating}
+              aria-busy={isCreating || undefined}
+              className={`${typography.button} flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-300 py-5 font-medium text-600 transition-colors hover:border-primary-1 hover:text-primary-1 disabled:cursor-wait disabled:opacity-60`}
             >
-              <PlusIcon size={20} weight="bold" aria-hidden />
-              Add component
+              {isCreating ? (
+                <CircleNotchIcon size={20} weight="bold" className="animate-spin" aria-hidden />
+              ) : (
+                <PlusIcon size={20} weight="bold" aria-hidden />
+              )}
+              {isCreating ? "Adding…" : "Add component"}
             </button>
           </PageContentContainer>
         </div>
@@ -298,8 +279,12 @@ export default function PageBuilder({ page }) {
 
       <AddBlockDialog
         open={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
+        onClose={() => {
+          if (!isCreating) setIsAddOpen(false);
+        }}
         onSelect={handleAdd}
+        isCreating={isCreating}
+        creatingType={createComponent.variables?.type ?? null}
       />
 
       {activeBlock && activeEntry && activeContent !== undefined ? (
@@ -314,7 +299,9 @@ export default function PageBuilder({ page }) {
           style={activeBlock.style}
           onContentChange={handleContentChange}
           onStyleChange={handleStyleChange}
-          onClose={handleInspectorClose}
+          onSubmit={handleSubmitEdits}
+          onClose={handleDismissInspector}
+          isSaving={isSaving}
         />
       ) : null}
     </div>

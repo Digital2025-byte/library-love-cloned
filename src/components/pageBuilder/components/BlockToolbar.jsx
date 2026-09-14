@@ -3,9 +3,17 @@ import {
   ArrowDownIcon,
   PencilSimpleIcon,
   TrashIcon,
+  CircleNotchIcon,
 } from "@phosphor-icons/react";
 
-function ToolbarButton({ onClick, disabled, label, tone = "default", children }) {
+function ToolbarButton({
+  onClick,
+  disabled,
+  loading,
+  label,
+  tone = "default",
+  children,
+}) {
   const toneClass =
     tone === "primary"
       ? "text-primary-1 hover:bg-primary-1/10"
@@ -17,12 +25,19 @@ function ToolbarButton({ onClick, disabled, label, tone = "default", children })
     <button
       type="button"
       onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
+      disabled={disabled || loading}
+      aria-label={loading ? `${label} (loading)` : label}
+      aria-busy={loading || undefined}
       title={label}
-      className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors disabled:cursor-not-allowed disabled:opacity-30 ${toneClass}`}
+      className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors disabled:cursor-wait ${
+        loading ? "opacity-100" : "disabled:cursor-not-allowed disabled:opacity-30"
+      } ${toneClass}`}
     >
-      {children}
+      {loading ? (
+        <CircleNotchIcon size={18} weight="bold" className="animate-spin" aria-hidden />
+      ) : (
+        children
+      )}
     </button>
   );
 }
@@ -35,35 +50,52 @@ export default function BlockToolbar({
   label,
   isFirst,
   isLast,
+  isRemoving = false,
   onEdit,
   onMoveUp,
   onMoveDown,
   onRemove,
 }) {
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+    <div
+      className={`pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-2 transition-opacity duration-150 ${
+        isRemoving
+          ? "opacity-100"
+          : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100"
+      }`}
+    >
       <span className="pointer-events-auto rounded-md bg-main/85 px-2 py-1 text-xs font-semibold tracking-wide text-white shadow-sm">
         {label}
       </span>
       <div className="pointer-events-auto flex items-center gap-0.5 rounded-lg bg-white/95 p-1 shadow-md ring-1 ring-200 backdrop-blur">
         <ToolbarButton
           onClick={onMoveUp}
-          disabled={isFirst}
+          disabled={isFirst || isRemoving}
           label="Move up"
         >
           <ArrowUpIcon size={18} weight="bold" aria-hidden />
         </ToolbarButton>
         <ToolbarButton
           onClick={onMoveDown}
-          disabled={isLast}
+          disabled={isLast || isRemoving}
           label="Move down"
         >
           <ArrowDownIcon size={18} weight="bold" aria-hidden />
         </ToolbarButton>
-        <ToolbarButton onClick={onEdit} label="Edit component" tone="primary">
+        <ToolbarButton
+          onClick={onEdit}
+          disabled={isRemoving}
+          label="Edit component"
+          tone="primary"
+        >
           <PencilSimpleIcon size={18} weight="bold" aria-hidden />
         </ToolbarButton>
-        <ToolbarButton onClick={onRemove} label="Remove component" tone="danger">
+        <ToolbarButton
+          onClick={onRemove}
+          loading={isRemoving}
+          label="Remove component"
+          tone="danger"
+        >
           <TrashIcon size={18} weight="bold" aria-hidden />
         </ToolbarButton>
       </div>

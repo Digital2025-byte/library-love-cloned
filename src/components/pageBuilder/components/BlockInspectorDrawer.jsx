@@ -7,8 +7,8 @@ import Drawer, { useDrawer } from "@/components/ui/Drawer";
  * Shared inspector for the block currently being edited. Mounted only while
  * a block is active, so there is exactly one drawer on the page at a time.
  *
- * Content/style edits flow straight back to the page state, so the preview
- * updates live as fields change.
+ * Content/style edits update the live preview only. Persist happens when
+ * the user clicks Done.
  */
 export default function BlockInspectorDrawer({
   entry,
@@ -17,13 +17,17 @@ export default function BlockInspectorDrawer({
   style,
   onContentChange,
   onStyleChange,
+  onSubmit,
   onClose,
+  isSaving = false,
 }) {
   const drawer = useDrawer({ defaultOpen: true });
   const PropsForm = entry.PropsForm;
 
-  const handleClose = () => {
-    drawer.close();
+  const handleDismiss = () => {
+    if (isSaving) {
+      return;
+    }
     onClose();
   };
 
@@ -31,14 +35,14 @@ export default function BlockInspectorDrawer({
     <Drawer
       isOpen={drawer.isOpen}
       onOpen={drawer.open}
-      onClose={handleClose}
+      onClose={handleDismiss}
       triggerRef={drawer.triggerRef}
       panelRef={drawer.panelRef}
       titleId={drawer.titleId}
       title={entry.label}
       footer={
         <InspectorFooter>
-          <InspectorSubmitButton onClick={handleClose}>
+          <InspectorSubmitButton onClick={onSubmit} loading={isSaving}>
             Done
           </InspectorSubmitButton>
         </InspectorFooter>

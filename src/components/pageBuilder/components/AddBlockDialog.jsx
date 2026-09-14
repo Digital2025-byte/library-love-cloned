@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { XIcon, PlusIcon } from "@phosphor-icons/react";
+import { XIcon, PlusIcon, CircleNotchIcon } from "@phosphor-icons/react";
 import { typography } from "@/styles/typography";
 import { BLOCK_LIBRARY } from "../registry/blockRegistry";
 
@@ -10,17 +10,23 @@ import { BLOCK_LIBRARY } from "../registry/blockRegistry";
  * Modal component picker. Lists every block type the builder knows about;
  * choosing one appends it to the page.
  */
-export default function AddBlockDialog({ open, onClose, onSelect }) {
+export default function AddBlockDialog({
+  open,
+  onClose,
+  onSelect,
+  isCreating = false,
+  creatingType = null,
+}) {
   useEffect(() => {
     if (!open) {
       return undefined;
     }
     const onKeyDown = (event) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape" && !isCreating) onClose();
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [open, onClose, isCreating]);
 
   if (!open || typeof document === "undefined") {
     return null;
@@ -35,7 +41,7 @@ export default function AddBlockDialog({ open, onClose, onSelect }) {
     >
       <div
         className="absolute inset-0 bg-main/40 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={isCreating ? undefined : onClose}
         aria-hidden
       />
       <div className="relative z-10 flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-background shadow-xl ring-1 ring-200">
@@ -46,8 +52,9 @@ export default function AddBlockDialog({ open, onClose, onSelect }) {
           <button
             type="button"
             onClick={onClose}
+            disabled={isCreating}
             aria-label="Close"
-            className="rounded-md p-1 text-700 transition-colors hover:bg-100 hover:text-main"
+            className="rounded-md p-1 text-700 transition-colors hover:bg-100 hover:text-main disabled:cursor-wait disabled:opacity-60"
           >
             <XIcon size={20} weight="regular" aria-hidden />
           </button>
@@ -55,15 +62,23 @@ export default function AddBlockDialog({ open, onClose, onSelect }) {
 
         <div className="min-h-0 flex-1 overflow-y-auto p-3">
           <ul className="flex flex-col gap-2">
-            {BLOCK_LIBRARY.map((item) => (
+            {BLOCK_LIBRARY.map((item) => {
+              const loading = isCreating && creatingType === item.id;
+              return (
               <li key={item.id}>
                 <button
                   type="button"
                   onClick={() => onSelect(item.id)}
-                  className="flex w-full items-center gap-3 rounded-xl border border-200 p-3 text-start transition-colors hover:border-primary-1 hover:bg-primary-1/5"
+                  disabled={isCreating}
+                  aria-busy={loading || undefined}
+                  className="flex w-full items-center gap-3 rounded-xl border border-200 p-3 text-start transition-colors hover:border-primary-1 hover:bg-primary-1/5 disabled:cursor-wait disabled:opacity-60"
                 >
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-1/10 text-primary-1">
-                    <PlusIcon size={18} weight="bold" aria-hidden />
+                    {loading ? (
+                      <CircleNotchIcon size={18} weight="bold" className="animate-spin" aria-hidden />
+                    ) : (
+                      <PlusIcon size={18} weight="bold" aria-hidden />
+                    )}
                   </span>
                   <span className="flex min-w-0 flex-col">
                     <span
@@ -77,7 +92,8 @@ export default function AddBlockDialog({ open, onClose, onSelect }) {
                   </span>
                 </button>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
       </div>
