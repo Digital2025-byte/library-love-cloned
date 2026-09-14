@@ -166,6 +166,7 @@ export type Database = {
     }
     Functions: {
       component_is_public: { Args: { _component_id: string }; Returns: boolean }
+      ensure_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
