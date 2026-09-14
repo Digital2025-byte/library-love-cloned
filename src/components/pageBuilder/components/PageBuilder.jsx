@@ -27,7 +27,7 @@ export default function PageBuilder({ page }) {
     updateBlockContent,
     updateBlockStyle,
     resetPage,
-  } = usePageBlocks({ slug: page.slug, ctx, lang });
+  } = usePageBlocks({ slug: page.slug, ctx, lang, initialBlocks: page.blocks });
 
   const [activeUid, setActiveUid] = useState(null);
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -54,16 +54,21 @@ export default function PageBuilder({ page }) {
 
     // Persist the new instance on this page in the backend.
     const data = ctx?.[entry.dataKey];
-    createComponent.mutate({
-      slug: page.slug,
-      type: sectionId,
-      position,
-      style: { ...entry.defaultStyle },
-      content:
-        data === undefined
-          ? {}
-          : { [lang]: entry.toEditorContent(data, lang) },
-    });
+    createComponent.mutate(
+      {
+        slug: page.slug,
+        type: sectionId,
+        position,
+        style: { ...entry.defaultStyle },
+        content:
+          data === undefined
+            ? {}
+            : { [lang]: entry.toEditorContent(data, lang) },
+      },
+      {
+        onSuccess: (block) => setActiveUid(block.uid),
+      },
+    );
   };
 
   const handleRemove = (uid) => {

@@ -5,8 +5,8 @@
  *   { blocks: [{ uid, sectionId, style, content: { en, ar } }] }
  *
  * Structure (order + which components) and style are shared across languages;
- * only `content` is stored per language. There is no backend yet, so this
- * keeps a visitor's work between reloads.
+ * only `content` is stored per language. Load still comes from the CMS;
+ * this keeps in-progress inspector edits during a session.
  */
 const STORAGE_PREFIX = "cms:page:";
 

@@ -2,64 +2,54 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getBlockEntry } from "../registry/blockRegistry";
-import { blockConfigSectionId, getPage } from "../pagesConfig";
 import { createBlockUid } from "../utils/ids";
-import {
-  clearPageBlocks,
-  loadPageBlocks,
-  savePageBlocks,
-} from "../utils/storage";
+import { clearPageBlocks, savePageBlocks } from "../utils/storage";
 
-/** Normalize a block config (string id or object) into a full block. */
-function blockFromConfig(config) {
-  const sectionId = blockConfigSectionId(config);
-  const entry = getBlockEntry(sectionId);
-  if (!entry) {
-    return null;
-  }
-  const preset = typeof config === "object" ? config : null;
-  return {
-    uid: createBlockUid(sectionId),
-    sectionId,
-    style: { ...entry.defaultStyle, ...(preset?.style || {}) },
-    // Preset content seeds both languages up front; anything missing is
-    // filled lazily from the component's demo data.
-    content: preset?.content ? { ...preset.content } : {},
-  };
-}
-
-/** Build the default composition for a page from its config. */
-function seedBlocksFromConfig(slug) {
-  const page = getPage(slug);
-  if (!page) {
+/** Map CMS blocks from getCmsPage into the builder's local shape. */
+function blocksFromCms(blocks) {
+  if (!Array.isArray(blocks)) {
     return [];
   }
-  return page.blocks.map(blockFromConfig).filter(Boolean);
+  return blocks.map((block) => ({
+    uid: block.uid,
+    sectionId: block.sectionId,
+    style: { ...(block.style || {}) },
+    content:
+      block.content && typeof block.content === "object" && !Array.isArray(block.content)
+        ? { ...block.content }
+        : {},
+  }));
+}
+
+function blocksSignature(blocks) {
+  return (blocks ?? []).map((block) => block.uid).join("|");
 }
 
 /**
- * Owns the blocks that make up a page: load, persist, and mutate.
+ * Owns the blocks that make up a page: load from the CMS, persist locally
+ * while editing, and mutate.
  *
  * @param {object}  args
  * @param {string}  args.slug   page slug
  * @param {object}  args.ctx    demo-data ctx from useCmsDemoData (per-block seed data)
  * @param {string}  args.lang   active language ("en" | "ar")
+ * @param {object[]} [args.initialBlocks] CMS blocks from getCmsPage
  */
-export default function usePageBlocks({ slug, ctx, lang }) {
-  const [blocks, setBlocks] = useState(() => {
-    const stored = loadPageBlocks(slug);
-    return stored ?? seedBlocksFromConfig(slug);
-  });
+export default function usePageBlocks({ slug, ctx, lang, initialBlocks }) {
+  const [blocks, setBlocks] = useState(() => blocksFromCms(initialBlocks));
 
-  // Reload composition when the page changes.
+  // Reload when the page slug or the CMS component list changes.
   const slugRef = useRef(slug);
+  const signatureRef = useRef(blocksSignature(initialBlocks));
   useEffect(() => {
-    if (slugRef.current === slug) {
+    const signature = blocksSignature(initialBlocks);
+    if (slugRef.current === slug && signatureRef.current === signature) {
       return;
     }
     slugRef.current = slug;
-    setBlocks(loadPageBlocks(slug) ?? seedBlocksFromConfig(slug));
-  }, [slug]);
+    signatureRef.current = signature;
+    setBlocks(blocksFromCms(initialBlocks));
+  }, [slug, initialBlocks]);
 
   // Lazily fill each block's content for the active language from demo data.
   useEffect(() => {
@@ -158,8 +148,8 @@ export default function usePageBlocks({ slug, ctx, lang }) {
 
   const resetPage = useCallback(() => {
     clearPageBlocks(slug);
-    setBlocks(seedBlocksFromConfig(slug));
-  }, [slug]);
+    setBlocks(blocksFromCms(initialBlocks));
+  }, [slug, initialBlocks]);
 
   return {
     blocks,

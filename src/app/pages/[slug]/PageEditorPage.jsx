@@ -1,15 +1,17 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import CmsDemoChrome from "@/components/demo/CmsDemoChrome";
 import PageContentContainer from "@/components/layout/PageContentContainer";
 import { typography } from "@/styles/typography";
-import { PageBuilder, getPage } from "@/components/pageBuilder";
+import { PageBuilder } from "@/components/pageBuilder";
+import { pageQueryOptions } from "@/queries/pages";
 
 export default function PageEditorPage() {
   const params = useParams();
   const slug = typeof params?.slug === "string" ? params.slug : "";
-  const page = getPage(slug);
+  const { data: page } = useSuspenseQuery(pageQueryOptions(slug));
 
   if (!page) {
     return (
