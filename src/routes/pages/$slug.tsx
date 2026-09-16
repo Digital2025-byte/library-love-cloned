@@ -18,9 +18,8 @@ export const Route = createFileRoute("/pages/$slug")({
       },
     ],
   }),
-  loader: ({ context, params }) => {
-    context.queryClient.ensureQueryData(pageQueryOptions(params.slug));
-  },
+  loader: ({ context, params }) =>
+    context.queryClient.ensureQueryData(pageQueryOptions(params.slug)),
   component: PageEditorPage,
   pendingComponent: () => (
     <div className="p-10 text-sm text-600">Loading page…</div>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { ensureWindowsSystemCa } from "@/lib/trust-windows-ca";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -13,10 +14,34 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function fetchErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const cause = error.cause;
+  if (cause instanceof Error) {
+    const code =
+      "code" in cause && typeof cause.code === "string" ? ` (${cause.code})` : "";
+    return `${error.message}: ${cause.message}${code}`;
+  }
+  return error.message;
+}
+
 /** Publishable-key client. Forwards a caller bearer token so an admin session sees drafts. */
 export function createCmsClient(request: Request) {
-  const url = process.env["SUPABASE_URL"]!;
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+  ensureWindowsSystemCa();
+  const url =
+    process.env["SUPABASE_URL"] ||
+    (import.meta.env["VITE_SUPABASE_URL"] as string | undefined);
+  const key =
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+    (import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] as string | undefined);
+  if (!url || !key) {
+    throw new Error(
+      `Missing Supabase environment variable(s): ${[
+        ...(!url ? ["SUPABASE_URL"] : []),
+        ...(!key ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
+      ].join(", ")}.`,
+    );
+  }
   const bearer = request.headers.get("authorization");
 
   return createClient(url, key, {
@@ -27,7 +52,13 @@ export function createCmsClient(request: Request) {
         headers.set("apikey", key);
         if (bearer) headers.set("Authorization", bearer);
         else if (key.startsWith("sb_")) headers.delete("Authorization");
-        return fetch(input as RequestInfo, { ...init, headers });
+        return fetch(input as RequestInfo, { ...init, headers }).catch(
+          (error: unknown) => {
+            throw new Error(`Supabase request failed (${fetchErrorMessage(error)})`, {
+              cause: error,
+            });
+          },
+        );
       },
     },
   });

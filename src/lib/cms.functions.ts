@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
+import { ensureWindowsSystemCa } from "@/lib/trust-windows-ca";
 
 export type CmsPageSummary = {
   slug: string;
@@ -81,10 +82,42 @@ export type CmsPageDetail = {
 };
 
 
+function supabasePublicEnv() {
+  const url =
+    process.env["SUPABASE_URL"] ||
+    (import.meta.env["VITE_SUPABASE_URL"] as string | undefined);
+  const key =
+    process.env["SUPABASE_PUBLISHABLE_KEY"] ||
+    (import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] as string | undefined);
+
+  if (!url || !key) {
+    const missing = [
+      ...(!url ? ["SUPABASE_URL"] : []),
+      ...(!key ? ["SUPABASE_PUBLISHABLE_KEY"] : []),
+    ];
+    throw new Error(
+      `Missing Supabase environment variable(s): ${missing.join(", ")}.`,
+    );
+  }
+
+  return { url, key };
+}
+
+function fetchErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const cause = error.cause;
+  if (cause instanceof Error) {
+    const code =
+      "code" in cause && typeof cause.code === "string" ? ` (${cause.code})` : "";
+    return `${error.message}: ${cause.message}${code}`;
+  }
+  return error.message;
+}
+
 /** Publishable-key client for public, RLS-respecting reads. */
 function createPublicClient() {
-  const url = process.env["SUPABASE_URL"]!;
-  const key = process.env["SUPABASE_PUBLISHABLE_KEY"]!;
+  ensureWindowsSystemCa();
+  const { url, key } = supabasePublicEnv();
 
   return createClient<Database>(url, key, {
     auth: {
@@ -97,7 +130,14 @@ function createPublicClient() {
         const headers = new Headers(init?.headers);
         headers.set("apikey", key);
         if (key.startsWith("sb_")) headers.delete("Authorization");
-        return fetch(input as RequestInfo, { ...init, headers });
+        return fetch(input as RequestInfo, { ...init, headers }).catch(
+          (error: unknown) => {
+            throw new Error(
+              `Supabase request failed (${fetchErrorMessage(error)})`,
+              { cause: error },
+            );
+          },
+        );
       },
     },
   });

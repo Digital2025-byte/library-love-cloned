@@ -17,6 +17,11 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    // flychamadmin occupies 8080. Docs and VITE_CMS2_API_BASE_URL use 3000.
+    server: {
+      port: 3000,
+      strictPort: true,
+    },
     plugins: [
       {
         name: "js-as-jsx",
