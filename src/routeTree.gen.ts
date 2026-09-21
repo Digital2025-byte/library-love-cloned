@@ -9,48 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as DocsSlugRouteImport } from './routes/docs/$slug'
-import { Route as IdeasSlugRouteImport } from './routes/ideas/$slug'
-import { Route as PagesIndexRouteImport } from './routes/pages/index'
-import { Route as PagesSlugRouteImport } from './routes/pages/$slug'
 import { Route as ApiPublicCreateComponentRouteImport } from './routes/api/public/create-component'
 import { Route as ApiPublicDeleteComponentRouteImport } from './routes/api/public/delete-component'
 import { Route as ApiPublicGetPageRouteImport } from './routes/api/public/get-page'
 import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-pages'
 import { Route as ApiPublicUpdateComponentRouteImport } from './routes/api/public/update-component'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsSlugRoute = DocsSlugRouteImport.update({
-  id: '/docs/$slug',
-  path: '/docs/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IdeasSlugRoute = IdeasSlugRouteImport.update({
-  id: '/ideas/$slug',
-  path: '/ideas/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagesIndexRoute = PagesIndexRouteImport.update({
-  id: '/pages/',
-  path: '/pages/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PagesSlugRoute = PagesSlugRouteImport.update({
-  id: '/pages/$slug',
-  path: '/pages/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiPublicCreateComponentRoute =
   ApiPublicCreateComponentRouteImport.update({
     id: '/api/public/create-component',
@@ -81,12 +45,6 @@ const ApiPublicUpdateComponentRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/docs/$slug': typeof DocsSlugRoute
-  '/ideas/$slug': typeof IdeasSlugRoute
-  '/pages/$slug': typeof PagesSlugRoute
-  '/pages/': typeof PagesIndexRoute
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
@@ -94,12 +52,6 @@ export interface FileRoutesByFullPath {
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/docs/$slug': typeof DocsSlugRoute
-  '/ideas/$slug': typeof IdeasSlugRoute
-  '/pages/$slug': typeof PagesSlugRoute
-  '/pages': typeof PagesIndexRoute
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
@@ -108,12 +60,6 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/docs/$slug': typeof DocsSlugRoute
-  '/ideas/$slug': typeof IdeasSlugRoute
-  '/pages/$slug': typeof PagesSlugRoute
-  '/pages/': typeof PagesIndexRoute
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
@@ -123,12 +69,6 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | '/'
-    | '/login'
-    | '/docs/$slug'
-    | '/ideas/$slug'
-    | '/pages/$slug'
-    | '/pages/'
     | '/api/public/create-component'
     | '/api/public/delete-component'
     | '/api/public/get-page'
@@ -136,12 +76,6 @@ export interface FileRouteTypes {
     | '/api/public/update-component'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
-    | '/login'
-    | '/docs/$slug'
-    | '/ideas/$slug'
-    | '/pages/$slug'
-    | '/pages'
     | '/api/public/create-component'
     | '/api/public/delete-component'
     | '/api/public/get-page'
@@ -149,12 +83,6 @@ export interface FileRouteTypes {
     | '/api/public/update-component'
   id:
     | '__root__'
-    | '/'
-    | '/login'
-    | '/docs/$slug'
-    | '/ideas/$slug'
-    | '/pages/$slug'
-    | '/pages/'
     | '/api/public/create-component'
     | '/api/public/delete-component'
     | '/api/public/get-page'
@@ -163,12 +91,6 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LoginRoute: typeof LoginRoute
-  DocsSlugRoute: typeof DocsSlugRoute
-  IdeasSlugRoute: typeof IdeasSlugRoute
-  PagesSlugRoute: typeof PagesSlugRoute
-  PagesIndexRoute: typeof PagesIndexRoute
   ApiPublicCreateComponentRoute: typeof ApiPublicCreateComponentRoute
   ApiPublicDeleteComponentRoute: typeof ApiPublicDeleteComponentRoute
   ApiPublicGetPageRoute: typeof ApiPublicGetPageRoute
@@ -178,48 +100,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs/$slug': {
-      id: '/docs/$slug'
-      path: '/docs/$slug'
-      fullPath: '/docs/$slug'
-      preLoaderRoute: typeof DocsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ideas/$slug': {
-      id: '/ideas/$slug'
-      path: '/ideas/$slug'
-      fullPath: '/ideas/$slug'
-      preLoaderRoute: typeof IdeasSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pages/': {
-      id: '/pages/'
-      path: '/pages'
-      fullPath: '/pages/'
-      preLoaderRoute: typeof PagesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pages/$slug': {
-      id: '/pages/$slug'
-      path: '/pages/$slug'
-      fullPath: '/pages/$slug'
-      preLoaderRoute: typeof PagesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/public/create-component': {
       id: '/api/public/create-component'
       path: '/api/public/create-component'
@@ -259,12 +139,6 @@ declare module '@tanstack/react-router' {
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  LoginRoute: LoginRoute,
-  DocsSlugRoute: DocsSlugRoute,
-  IdeasSlugRoute: IdeasSlugRoute,
-  PagesSlugRoute: PagesSlugRoute,
-  PagesIndexRoute: PagesIndexRoute,
   ApiPublicCreateComponentRoute: ApiPublicCreateComponentRoute,
   ApiPublicDeleteComponentRoute: ApiPublicDeleteComponentRoute,
   ApiPublicGetPageRoute: ApiPublicGetPageRoute,

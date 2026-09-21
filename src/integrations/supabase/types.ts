@@ -72,6 +72,7 @@ export type Database = {
           component_id: string
           created_at: string
           id: string
+          lang: string
           page_id: string
           position: number
           updated_at: string
@@ -80,6 +81,7 @@ export type Database = {
           component_id: string
           created_at?: string
           id?: string
+          lang?: string
           page_id: string
           position?: number
           updated_at?: string
@@ -88,6 +90,7 @@ export type Database = {
           component_id?: string
           created_at?: string
           id?: string
+          lang?: string
           page_id?: string
           position?: number
           updated_at?: string

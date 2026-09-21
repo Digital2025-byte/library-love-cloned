@@ -3,6 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { ensureWindowsSystemCa } from "@/lib/trust-windows-ca";
+import {
+  DEFAULT_LANGUAGE,
+  mergeStyleMaps,
+  normalizeLang,
+} from "@/lib/cms-languages";
 
 export type CmsPageSummary = {
   slug: string;
@@ -46,6 +51,8 @@ export type CmsPublicBlock = {
 export type CreateCmsComponentInput = {
   slug: string;
   type: string;
+  /** Language this component belongs to on the page ("en" | "ar"). */
+  lang?: string;
   position?: number;
   style?: { [key: string]: Json };
   content?: { [key: string]: Json };
@@ -177,6 +184,7 @@ type ComponentRow = {
 /** A page↔component link row with the component nested under it. */
 type PageComponentRow = {
   position: number;
+  lang?: string;
   components: ComponentRow | ComponentRow[] | null;
 };
 
@@ -282,7 +290,7 @@ async function requirePageLink(
 ) {
   const { data: link, error } = await supabase
     .from("page_components")
-    .select("id, position, page_id, component_id")
+    .select("id, position, page_id, component_id, lang")
     .eq("page_id", pageId)
     .eq("component_id", uid)
     .maybeSingle();
@@ -296,7 +304,7 @@ async function requirePageLink(
 async function publicBlockForLink(
   supabase: CmsWriteClient,
   uid: string,
-  link: { id: string; position: number; page_id: string },
+  link: { id: string; position: number; page_id: string; lang: string },
 ): Promise<CmsPublicBlock> {
   const { data: row, error: rowError } = await supabase
     .from("components")
@@ -307,10 +315,12 @@ async function publicBlockForLink(
     .single();
   if (rowError) throw new Error(rowError.message);
 
+  // Order is within the same language's blocks only.
   const { data: siblings, error: siblingError } = await supabase
     .from("page_components")
     .select("id")
     .eq("page_id", link.page_id)
+    .eq("lang", link.lang)
     .order("position", { ascending: true });
   if (siblingError) throw new Error(siblingError.message);
 
@@ -330,6 +340,9 @@ export async function createComponentForPage(
   data: CreateCmsComponentInput,
 ): Promise<CmsPublicBlock> {
   const pageId = await requirePageId(supabase, data.slug);
+  // The component belongs to one language of the page; position is ordered
+  // within that language only.
+  const lang = normalizeLang(data.lang) ?? DEFAULT_LANGUAGE;
 
   let position = data.position;
   if (position === undefined) {
@@ -337,6 +350,7 @@ export async function createComponentForPage(
       .from("page_components")
       .select("position")
       .eq("page_id", pageId)
+      .eq("lang", lang)
       .order("position", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -358,8 +372,8 @@ export async function createComponentForPage(
 
   const { data: link, error: linkError } = await supabase
     .from("page_components")
-    .insert({ page_id: pageId, component_id: row.id, position })
-    .select("id, position, page_id")
+    .insert({ page_id: pageId, component_id: row.id, position, lang })
+    .select("id, position, page_id, lang")
     .single();
   if (linkError) throw new Error(linkError.message);
 
@@ -409,15 +423,22 @@ export async function updateComponentForPage(
 
   if (data.type) patch.type = data.type;
   if (data.position !== undefined) patch.position = data.position;
-  if (data.style !== undefined) patch.style = data.style as never;
-  if (data.content !== undefined) {
+  if (data.style !== undefined || data.content !== undefined) {
+    // Fetch the current row once so both content and style language-merge
+    // (an edit to one locale must not wipe the other, and style migrates from
+    // a legacy flat object to a per-language map on first per-language edit).
     const { data: current, error: currentError } = await supabase
       .from("components")
-      .select("content")
+      .select("content, style")
       .eq("id", data.uid)
       .maybeSingle();
     if (currentError) throw new Error(currentError.message);
-    patch.content = mergeContentMaps(current?.content, data.content) as never;
+    if (data.content !== undefined) {
+      patch.content = mergeContentMaps(current?.content, data.content) as never;
+    }
+    if (data.style !== undefined) {
+      patch.style = mergeStyleMaps(current?.style, data.style) as never;
+    }
   }
 
   if (Object.keys(patch).length > 0) {
@@ -442,6 +463,7 @@ export async function updateComponentForPage(
     id: link.id,
     position: nextPosition,
     page_id: link.page_id,
+    lang: link.lang,
   });
 }
 
@@ -456,7 +478,7 @@ export const getCmsPage = createServerFn({ method: "GET" })
     const { data: page, error } = await supabase
       .from("pages")
       .select(
-        "id, slug, label, description, status, page_components(position, components(id, type, style, content))",
+        "id, slug, label, description, status, page_components(position, lang, components(id, type, style, content))",
       )
       .eq("slug", data.slug)
       .maybeSingle();
@@ -464,7 +486,9 @@ export const getCmsPage = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!page) return null;
 
+    // Blocks are per-language; this internal reader is English-first.
     const blocks = ((page.page_components ?? []) as PageComponentRow[])
+      .filter((link) => (link.lang ?? DEFAULT_LANGUAGE) === DEFAULT_LANGUAGE)
       .slice()
       .sort((a, b) => a.position - b.position)
       .flatMap((link) => {
@@ -498,6 +522,7 @@ export const createCmsComponent = createServerFn({ method: "POST" })
       style: asJsonMap(input.style),
       content: asJsonMap(input.content),
     };
+    if (input.lang) data.lang = input.lang;
     if (input.position !== undefined) data.position = input.position;
     return data;
   })

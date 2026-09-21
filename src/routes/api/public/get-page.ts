@@ -1,5 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createCmsClient } from "./get-pages";
+import {
+  dirFor,
+  normalizeLang,
+  pickLanguage,
+  styleForLang,
+} from "@/lib/cms-languages";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -26,6 +32,7 @@ type ComponentRow = {
 type PageComponentRow = {
   id: string;
   position: number;
+  lang: string;
   components: ComponentRow | ComponentRow[] | null;
 };
 
@@ -55,7 +62,13 @@ export const Route = createFileRoute("/api/public/get-page")({
     handlers: {
       OPTIONS: () => json({}),
       GET: async ({ request }) => {
-        const slug = new URL(request.url).searchParams.get("slug");
+        const searchParams = new URL(request.url).searchParams;
+        const slug = searchParams.get("slug");
+        // Optional locale: when given, each block's `content` AND `style` are
+        // narrowed to just that language (`{ [lang]: {...} }`; content is `{}`
+        // when unauthored, style falls back to the shared/legacy flat style).
+        // Without `lang` the full per-language maps are returned.
+        const lang = normalizeLang(searchParams.get("lang"));
         if (!slug)
           return json(
             {
@@ -71,7 +84,7 @@ export const Route = createFileRoute("/api/public/get-page")({
         const { data, error } = await supabase
           .from("pages")
           .select(
-            "id, slug, label, description, status, created_at, updated_at, page_components(id, position, components(id, type, style, content, created_at, updated_at, component_types(label)))"
+            "id, slug, label, description, status, created_at, updated_at, page_components(id, position, lang, components(id, type, style, content, created_at, updated_at, component_types(label)))"
           )
           .eq("slug", slug)
           .maybeSingle();
@@ -92,13 +105,28 @@ export const Route = createFileRoute("/api/public/get-page")({
             404
           );
 
+        // Blocks are per-language: when `lang` is given, return only that
+        // language's components. Without `lang` (legacy callers) return them all.
         const links = ((data.page_components ?? []) as PageComponentRow[])
+          .filter((link) => !lang || link.lang === lang)
           .slice()
           .sort((a, b) => a.position - b.position);
 
         const blocks = links.flatMap((link, index) => {
           const component = firstComponent(link);
           if (!component) return [];
+          const fullContent = component.content ?? {};
+          const fullStyle = component.style ?? {};
+          // With `lang`: only that language's objects (content `{}` when
+          // unauthored; style resolved from per-language map or legacy flat).
+          // Without: the full per-language maps.
+          let content: unknown = fullContent;
+          let style: unknown = fullStyle;
+          if (lang) {
+            const picked = pickLanguage(fullContent, lang);
+            content = picked ? { [lang]: picked } : {};
+            style = { [lang]: styleForLang(fullStyle, lang) };
+          }
           return [
             {
               uid: component.id,
@@ -107,9 +135,10 @@ export const Route = createFileRoute("/api/public/get-page")({
               sectionLabel: typeLabel(component),
               position: link.position,
               order: index,
-              languages: languagesOf(component.content),
-              style: component.style ?? {},
-              content: component.content ?? {},
+              // Every language authored for this component (independent of `lang`).
+              languages: languagesOf(fullContent),
+              style,
+              content,
               createdAt: component.created_at,
               updatedAt: component.updated_at,
             },
@@ -130,6 +159,8 @@ export const Route = createFileRoute("/api/public/get-page")({
             blockCount: blocks.length,
             sectionIds: [...new Set(blocks.map((b) => b.sectionId))],
             languages: [...new Set(blocks.flatMap((b) => b.languages))],
+            lang,
+            dir: dirFor(lang),
             generatedAt: new Date().toISOString(),
           },
         });

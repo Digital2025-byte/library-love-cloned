@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { ensureWindowsSystemCa } from "@/lib/trust-windows-ca";
+import { dirFor, normalizeLang } from "@/lib/cms-languages";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -72,7 +73,7 @@ type PageRow = {
   status: string;
   created_at: string;
   updated_at: string;
-  page_components: { id: string }[] | null;
+  page_components: { id: string; lang: string }[] | null;
 };
 
 export const Route = createFileRoute("/api/public/get-pages")({
@@ -82,12 +83,15 @@ export const Route = createFileRoute("/api/public/get-pages")({
       GET: async ({ request }) => {
         const url = new URL(request.url);
         const status = url.searchParams.get("status");
+        // Page summaries carry no localized content; `lang` is accepted and
+        // echoed so the list request shares the same locale contract as get-page.
+        const lang = normalizeLang(url.searchParams.get("lang"));
 
         const supabase = createCmsClient(request);
         let query = supabase
           .from("pages")
           .select(
-            "id, slug, label, description, status, created_at, updated_at, page_components(id)"
+            "id, slug, label, description, status, created_at, updated_at, page_components(id, lang)"
           )
           .order("slug", { ascending: true });
 
@@ -102,17 +106,25 @@ export const Route = createFileRoute("/api/public/get-pages")({
           );
 
         const rows = (data ?? []) as unknown as PageRow[];
-        const pages = rows.map((page) => ({
-          id: page.id,
-          slug: page.slug,
-          label: page.label,
-          description: page.description,
-          status: page.status,
-          isPublished: page.status === "published",
-          componentCount: page.page_components?.length ?? 0,
-          createdAt: page.created_at,
-          updatedAt: page.updated_at,
-        }));
+        const pages = rows.map((page) => {
+          const links = page.page_components ?? [];
+          // With `lang`, count only that language's components (blocks are
+          // per-language now); without it, count them all.
+          const componentCount = lang
+            ? links.filter((link) => link.lang === lang).length
+            : links.length;
+          return {
+            id: page.id,
+            slug: page.slug,
+            label: page.label,
+            description: page.description,
+            status: page.status,
+            isPublished: page.status === "published",
+            componentCount,
+            createdAt: page.created_at,
+            updatedAt: page.updated_at,
+          };
+        });
 
         return json({
           data: pages,
@@ -120,7 +132,9 @@ export const Route = createFileRoute("/api/public/get-pages")({
             count: pages.length,
             publishedCount: pages.filter((p) => p.isPublished).length,
             draftCount: pages.filter((p) => !p.isPublished).length,
-            filters: { status: status || null },
+            filters: { status: status || null, lang },
+            lang,
+            dir: dirFor(lang),
             generatedAt: new Date().toISOString(),
           },
         });

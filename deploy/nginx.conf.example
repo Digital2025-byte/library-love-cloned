@@ -1,0 +1,24 @@
+# FlyCham CMS backend — nginx reverse proxy
+# Save as: /etc/nginx/sites-available/cms.flycham.com
+# Enable:  ln -s /etc/nginx/sites-available/cms.flycham.com /etc/nginx/sites-enabled/
+# Test:    nginx -t && systemctl reload nginx
+# TLS:     certbot --nginx -d cms.flycham.com   (adds the 443 server block + redirect)
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name cms.flycham.com;   # <-- change to your subdomain
+
+    # CORS is handled by the CMS app itself (Access-Control-Allow-Origin: *),
+    # so nothing extra is needed here.
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+}

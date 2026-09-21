@@ -15,6 +15,7 @@ import { createCmsClient } from "./get-pages";
 type CreateBody = {
   slug?: string;
   type?: string;
+  lang?: string;
   position?: number;
   style?: { [key: string]: Json };
   content?: { [key: string]: Json };
@@ -55,6 +56,7 @@ export const Route = createFileRoute("/api/public/create-component")({
           style: asJsonMap(body.style),
           content: asJsonMap(body.content),
         };
+        if (typeof body.lang === "string") payload.lang = body.lang;
         if (typeof body.position === "number") payload.position = body.position;
 
         try {
