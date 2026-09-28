@@ -11,10 +11,12 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ApiPublicCreateComponentRouteImport } from './routes/api/public/create-component'
 import { Route as ApiPublicDeleteComponentRouteImport } from './routes/api/public/delete-component'
+import { Route as ApiPublicGetFooterRouteImport } from './routes/api/public/get-footer'
 import { Route as ApiPublicGetHeaderRouteImport } from './routes/api/public/get-header'
 import { Route as ApiPublicGetPageRouteImport } from './routes/api/public/get-page'
 import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-pages'
 import { Route as ApiPublicUpdateComponentRouteImport } from './routes/api/public/update-component'
+import { Route as ApiPublicUpdateFooterRouteImport } from './routes/api/public/update-footer'
 import { Route as ApiPublicUpdateHeaderRouteImport } from './routes/api/public/update-header'
 
 const ApiPublicCreateComponentRoute =
@@ -29,6 +31,11 @@ const ApiPublicDeleteComponentRoute =
     path: '/api/public/delete-component',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGetFooterRoute = ApiPublicGetFooterRouteImport.update({
+  id: '/api/public/get-footer',
+  path: '/api/public/get-footer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGetHeaderRoute = ApiPublicGetHeaderRouteImport.update({
   id: '/api/public/get-header',
   path: '/api/public/get-header',
@@ -50,6 +57,11 @@ const ApiPublicUpdateComponentRoute =
     path: '/api/public/update-component',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicUpdateFooterRoute = ApiPublicUpdateFooterRouteImport.update({
+  id: '/api/public/update-footer',
+  path: '/api/public/update-footer',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicUpdateHeaderRoute = ApiPublicUpdateHeaderRouteImport.update({
   id: '/api/public/update-header',
   path: '/api/public/update-header',
@@ -59,29 +71,35 @@ const ApiPublicUpdateHeaderRoute = ApiPublicUpdateHeaderRouteImport.update({
 export interface FileRoutesByFullPath {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
+  '/api/public/get-footer': typeof ApiPublicGetFooterRoute
   '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
+  '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
 }
 export interface FileRoutesByTo {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
+  '/api/public/get-footer': typeof ApiPublicGetFooterRoute
   '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
+  '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
+  '/api/public/get-footer': typeof ApiPublicGetFooterRoute
   '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
+  '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
 }
 export interface FileRouteTypes {
@@ -89,38 +107,46 @@ export interface FileRouteTypes {
   fullPaths:
     | '/api/public/create-component'
     | '/api/public/delete-component'
+    | '/api/public/get-footer'
     | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
     | '/api/public/update-component'
+    | '/api/public/update-footer'
     | '/api/public/update-header'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/api/public/create-component'
     | '/api/public/delete-component'
+    | '/api/public/get-footer'
     | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
     | '/api/public/update-component'
+    | '/api/public/update-footer'
     | '/api/public/update-header'
   id:
     | '__root__'
     | '/api/public/create-component'
     | '/api/public/delete-component'
+    | '/api/public/get-footer'
     | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
     | '/api/public/update-component'
+    | '/api/public/update-footer'
     | '/api/public/update-header'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ApiPublicCreateComponentRoute: typeof ApiPublicCreateComponentRoute
   ApiPublicDeleteComponentRoute: typeof ApiPublicDeleteComponentRoute
+  ApiPublicGetFooterRoute: typeof ApiPublicGetFooterRoute
   ApiPublicGetHeaderRoute: typeof ApiPublicGetHeaderRoute
   ApiPublicGetPageRoute: typeof ApiPublicGetPageRoute
   ApiPublicGetPagesRoute: typeof ApiPublicGetPagesRoute
   ApiPublicUpdateComponentRoute: typeof ApiPublicUpdateComponentRoute
+  ApiPublicUpdateFooterRoute: typeof ApiPublicUpdateFooterRoute
   ApiPublicUpdateHeaderRoute: typeof ApiPublicUpdateHeaderRoute
 }
 
@@ -138,6 +164,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/delete-component'
       fullPath: '/api/public/delete-component'
       preLoaderRoute: typeof ApiPublicDeleteComponentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/get-footer': {
+      id: '/api/public/get-footer'
+      path: '/api/public/get-footer'
+      fullPath: '/api/public/get-footer'
+      preLoaderRoute: typeof ApiPublicGetFooterRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/get-header': {
@@ -168,6 +201,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicUpdateComponentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/update-footer': {
+      id: '/api/public/update-footer'
+      path: '/api/public/update-footer'
+      fullPath: '/api/public/update-footer'
+      preLoaderRoute: typeof ApiPublicUpdateFooterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/update-header': {
       id: '/api/public/update-header'
       path: '/api/public/update-header'
@@ -181,10 +221,12 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   ApiPublicCreateComponentRoute: ApiPublicCreateComponentRoute,
   ApiPublicDeleteComponentRoute: ApiPublicDeleteComponentRoute,
+  ApiPublicGetFooterRoute: ApiPublicGetFooterRoute,
   ApiPublicGetHeaderRoute: ApiPublicGetHeaderRoute,
   ApiPublicGetPageRoute: ApiPublicGetPageRoute,
   ApiPublicGetPagesRoute: ApiPublicGetPagesRoute,
   ApiPublicUpdateComponentRoute: ApiPublicUpdateComponentRoute,
+  ApiPublicUpdateFooterRoute: ApiPublicUpdateFooterRoute,
   ApiPublicUpdateHeaderRoute: ApiPublicUpdateHeaderRoute,
 }
 export const routeTree = rootRouteImport
