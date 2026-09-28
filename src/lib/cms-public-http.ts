@@ -1,12 +1,13 @@
-export function publicJson(body: unknown, status = 200) {
+export function publicJson(body: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Headers": "authorization, content-type, apikey",
-      "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Cache-Control": "no-store",
+      ...extraHeaders,
     },
   });
 }

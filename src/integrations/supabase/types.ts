@@ -145,6 +145,33 @@ export type Database = {
         }
         Relationships: []
       }
+      site_header: {
+        Row: {
+          data: Json
+          id: string
+          lang: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          data: Json
+          id?: string
+          lang: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          data?: Json
+          id?: string
+          lang?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

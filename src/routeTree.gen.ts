@@ -11,9 +11,11 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ApiPublicCreateComponentRouteImport } from './routes/api/public/create-component'
 import { Route as ApiPublicDeleteComponentRouteImport } from './routes/api/public/delete-component'
+import { Route as ApiPublicGetHeaderRouteImport } from './routes/api/public/get-header'
 import { Route as ApiPublicGetPageRouteImport } from './routes/api/public/get-page'
 import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-pages'
 import { Route as ApiPublicUpdateComponentRouteImport } from './routes/api/public/update-component'
+import { Route as ApiPublicUpdateHeaderRouteImport } from './routes/api/public/update-header'
 
 const ApiPublicCreateComponentRoute =
   ApiPublicCreateComponentRouteImport.update({
@@ -27,6 +29,11 @@ const ApiPublicDeleteComponentRoute =
     path: '/api/public/delete-component',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicGetHeaderRoute = ApiPublicGetHeaderRouteImport.update({
+  id: '/api/public/get-header',
+  path: '/api/public/get-header',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicGetPageRoute = ApiPublicGetPageRouteImport.update({
   id: '/api/public/get-page',
   path: '/api/public/get-page',
@@ -43,59 +50,78 @@ const ApiPublicUpdateComponentRoute =
     path: '/api/public/update-component',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicUpdateHeaderRoute = ApiPublicUpdateHeaderRouteImport.update({
+  id: '/api/public/update-header',
+  path: '/api/public/update-header',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
+  '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
+  '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
 }
 export interface FileRoutesByTo {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
+  '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
+  '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
   '/api/public/delete-component': typeof ApiPublicDeleteComponentRoute
+  '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
+  '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/api/public/create-component'
     | '/api/public/delete-component'
+    | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
     | '/api/public/update-component'
+    | '/api/public/update-header'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/api/public/create-component'
     | '/api/public/delete-component'
+    | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
     | '/api/public/update-component'
+    | '/api/public/update-header'
   id:
     | '__root__'
     | '/api/public/create-component'
     | '/api/public/delete-component'
+    | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
     | '/api/public/update-component'
+    | '/api/public/update-header'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   ApiPublicCreateComponentRoute: typeof ApiPublicCreateComponentRoute
   ApiPublicDeleteComponentRoute: typeof ApiPublicDeleteComponentRoute
+  ApiPublicGetHeaderRoute: typeof ApiPublicGetHeaderRoute
   ApiPublicGetPageRoute: typeof ApiPublicGetPageRoute
   ApiPublicGetPagesRoute: typeof ApiPublicGetPagesRoute
   ApiPublicUpdateComponentRoute: typeof ApiPublicUpdateComponentRoute
+  ApiPublicUpdateHeaderRoute: typeof ApiPublicUpdateHeaderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -112,6 +138,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/delete-component'
       fullPath: '/api/public/delete-component'
       preLoaderRoute: typeof ApiPublicDeleteComponentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/get-header': {
+      id: '/api/public/get-header'
+      path: '/api/public/get-header'
+      fullPath: '/api/public/get-header'
+      preLoaderRoute: typeof ApiPublicGetHeaderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/get-page': {
@@ -135,15 +168,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicUpdateComponentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/update-header': {
+      id: '/api/public/update-header'
+      path: '/api/public/update-header'
+      fullPath: '/api/public/update-header'
+      preLoaderRoute: typeof ApiPublicUpdateHeaderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   ApiPublicCreateComponentRoute: ApiPublicCreateComponentRoute,
   ApiPublicDeleteComponentRoute: ApiPublicDeleteComponentRoute,
+  ApiPublicGetHeaderRoute: ApiPublicGetHeaderRoute,
   ApiPublicGetPageRoute: ApiPublicGetPageRoute,
   ApiPublicGetPagesRoute: ApiPublicGetPagesRoute,
   ApiPublicUpdateComponentRoute: ApiPublicUpdateComponentRoute,
+  ApiPublicUpdateHeaderRoute: ApiPublicUpdateHeaderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
