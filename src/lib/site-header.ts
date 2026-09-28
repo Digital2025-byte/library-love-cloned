@@ -132,8 +132,19 @@ export type HeaderDocument = {
   logo: { lightUrl: string; darkUrl: string; alt: string; href: string };
   login: { show: boolean; label: string; href: string };
   region: { show: boolean; label: string };
+  /** Mobile menu extras (optional — clients fill it from their per-language default). */
+  mobile?: HeaderMobile;
   menus: HeaderMenu[];
   style: HeaderStyle;
+};
+
+export type HeaderMobileLink = { id: string; label: string; href: string };
+
+export type HeaderMobile = {
+  coverImageUrl: string;
+  coverAlt: string;
+  homeLabel: string;
+  links: HeaderMobileLink[];
 };
 
 export type HeaderIssue = { path: string; message: string };
@@ -198,6 +209,10 @@ type Field =
   | "logo"
   | "login"
   | "region"
+  | "mobile"
+  | "coverImageUrl"
+  | "coverAlt"
+  | "homeLabel"
   | "menus"
   | "style"
   | "lightUrl"
@@ -294,6 +309,23 @@ function normalizeMenu(raw: unknown, index: number): unknown {
   };
 }
 
+function normalizeMobileLink(raw: unknown, index: number): unknown {
+  if (!isObj(raw)) return raw;
+  return { id: or(raw.id, `mobile-link-${index + 1}`), label: or(raw.label, ""), href: or(raw.href, "") };
+}
+
+/** Absent stays absent (clients use their per-language default). */
+function normalizeMobile(raw: unknown): unknown {
+  if (raw === undefined || raw === null) return undefined;
+  if (!isObj(raw)) return raw;
+  return {
+    coverImageUrl: or(raw.coverImageUrl, ""),
+    coverAlt: or(raw.coverAlt, ""),
+    homeLabel: or(raw.homeLabel, ""),
+    links: normalizeList(raw.links, normalizeMobileLink),
+  };
+}
+
 function normalizeStyle(raw: unknown): unknown {
   if (raw === undefined || raw === null) return { ...DEFAULT_HEADER_STYLE };
   if (!isObj(raw)) return raw;
@@ -314,6 +346,7 @@ export function normalizeHeaderDocument(input: unknown): unknown {
   const logo = isObj(input.logo) ? input.logo : (input.logo ?? {});
   const login = isObj(input.login) ? input.login : (input.login ?? {});
   const region = isObj(input.region) ? input.region : (input.region ?? {});
+  const mobile = normalizeMobile(input.mobile);
   return {
     schemaVersion: or(input.schemaVersion, HEADER_SCHEMA_VERSION),
     logo: isObj(logo)
@@ -332,6 +365,7 @@ export function normalizeHeaderDocument(input: unknown): unknown {
         }
       : login,
     region: isObj(region) ? { show: or(region.show, true), label: or(region.label, "") } : region,
+    ...(mobile === undefined ? {} : { mobile }),
     menus: normalizeList(input.menus, normalizeMenu),
     style: normalizeStyle(input.style),
   };
@@ -358,6 +392,9 @@ function isValidAssetUrl(value: string): boolean {
   if (value.startsWith("/")) return !value.startsWith("//");
   return /^https?:\/\/[^\s]+$/i.test(value);
 }
+
+/** Secondary links under the mobile menu (Contact us, Help & support, …). */
+const MOBILE_LINKS_MAX = 6;
 
 class Checker {
   issues: HeaderIssue[] = [];
@@ -544,6 +581,21 @@ export function parseHeaderDocument(input: unknown): ParseHeaderResult {
   if (c.obj(doc.region, "region")) {
     c.bool(doc.region.show, "region.show");
     c.str(doc.region.label, "region.label", HEADER_LIMITS.label);
+  }
+  if (doc.mobile !== undefined && c.obj(doc.mobile, "mobile")) {
+    c.asset(doc.mobile.coverImageUrl, "mobile.coverImageUrl");
+    c.str(doc.mobile.coverAlt, "mobile.coverAlt", HEADER_LIMITS.description);
+    c.str(doc.mobile.homeLabel, "mobile.homeLabel", HEADER_LIMITS.label);
+    if (c.array(doc.mobile.links, "mobile.links", MOBILE_LINKS_MAX)) {
+      const ids = new Set<string>();
+      doc.mobile.links.forEach((l, i) => {
+        const p = `mobile.links[${i}]`;
+        if (!c.obj(l, p)) return;
+        c.id(l.id, `${p}.id`, ids);
+        c.str(l.label, `${p}.label`, HEADER_LIMITS.label, { required: true });
+        c.href(l.href, `${p}.href`);
+      });
+    }
   }
   if (c.array(doc.menus, "menus", HEADER_LIMITS.menus)) {
     const menuIds = new Set<string>();
