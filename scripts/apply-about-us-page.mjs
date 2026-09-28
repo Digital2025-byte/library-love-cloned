@@ -1,6 +1,6 @@
 /**
  * One-off admin task for the About Us dynamic page:
- *   1. Ensure page-media-hero, seat-journey, promo-banner, and faqs types exist.
+ *   1. Ensure page-media-hero, seat-journey, promo-banner, about-values, and faqs types exist.
  *   2. Ensure the "about-us" page row exists.
  *   3. Seed blocks per language (EN + AR), if that language has none:
  *        0 page-media-hero
@@ -8,7 +8,8 @@
  *        2 seat-journey (mission)
  *        3 seat-journey (vision)
  *        4 promo-banner (fleet)
- *        5 faqs
+ *        5 about-values
+ *        6 faqs
  *
  * Idempotent: re-running upserts the types/page and only seeds a language's
  * blocks when that language has none.
@@ -49,6 +50,7 @@ const PAGE_SLUG = "about-us";
 const HERO_TYPE = "page-media-hero";
 const JOURNEY_TYPE = "seat-journey";
 const PROMO_TYPE = "promo-banner";
+const VALUES_TYPE = "about-values";
 const FAQS_TYPE = "faqs";
 
 const HERO_IMG = "/about-us/hero.jpg";
@@ -87,6 +89,41 @@ const TEXT = {
         "Fly Cham's modern Airbus A320 fleet delivers comfort, luxury, and safety on every journey. Meeting the highest international standards, each flight ensures confidence and peace of mind. As the fleet expands, Fly Cham offers more destinations and exceptional travel experiences.",
       cta: "Discover more",
       imageAlt: "Interior cabin of a Fly Cham aircraft",
+    },
+    values: {
+      title: "Our Values",
+      items: {
+        safety: {
+          title: "Safety First",
+          description:
+            "We are committed to applying the highest safety standards in all our operations to ensure the comfort and well-being of our customers and employees.",
+        },
+        hospitality: {
+          title: "Authentic Hospitality",
+          description:
+            "We embody the generosity of Syrian hospitality in every detail, to create unforgettable memories in the skies.",
+        },
+        sustainability: {
+          title: "Sustainability",
+          description:
+            "Our responsibility extends beyond the present, as we build a more environmentally and economically sustainable future with every step we take.",
+        },
+        customerFocus: {
+          title: "Customer Focus",
+          description:
+            "We place customer satisfaction, hospitality generosity, and passenger comfort first.",
+        },
+        excellence: {
+          title: "Excellence",
+          description:
+            "We are committed to constantly striving to provide the best travel experience for our customers, with outstanding performance and meticulous attention to detail.",
+        },
+        teamwork: {
+          title: "Teamwork",
+          description:
+            "Our team works with cooperation and passion to provide the highest levels of service and meet your needs, ensuring your comfort throughout the journey.",
+        },
+      },
     },
     faq: {
       title: "Frequently Asked Questions",
@@ -130,6 +167,41 @@ const TEXT = {
         "يوفّر أسطول فلاي شام الحديث من طائرات إيرباص A320 الراحة والفخامة والأمان في كل رحلة. وبما يلبّي أعلى المعايير الدولية، تضمن كل رحلة الثقة وراحة البال. ومع توسّع الأسطول، تقدّم فلاي شام المزيد من الوجهات وتجارب سفر استثنائية.",
       cta: "اكتشف المزيد",
       imageAlt: "المقصورة الداخلية لطائرة فلاي شام",
+    },
+    values: {
+      title: "قيمنا",
+      items: {
+        safety: {
+          title: "السلامة أولاً",
+          description:
+            "نلتزم بتطبيق أعلى معايير السلامة في جميع عملياتنا لضمان راحة ورفاهية عملائنا وموظفينا.",
+        },
+        hospitality: {
+          title: "ضيافة أصيلة",
+          description:
+            "نجسّد كرم الضيافة السورية في كل التفاصيل، لنصنع ذكريات لا تُنسى في الأجواء.",
+        },
+        sustainability: {
+          title: "الاستدامة",
+          description:
+            "تمتدّ مسؤوليتنا إلى ما هو أبعد من الحاضر، إذ نبني مستقبلاً أكثر استدامة بيئياً واقتصادياً مع كل خطوة نخطوها.",
+        },
+        customerFocus: {
+          title: "التركيز على العميل",
+          description:
+            "نضع رضا العميل وكرم الضيافة وراحة المسافر في المقدّمة.",
+        },
+        excellence: {
+          title: "التميّز",
+          description:
+            "نلتزم بالسعي الدائم لتقديم أفضل تجربة سفر لعملائنا، بأداء متميّز واهتمام دقيق بالتفاصيل.",
+        },
+        teamwork: {
+          title: "العمل الجماعي",
+          description:
+            "يعمل فريقنا بتعاون وشغف لتقديم أعلى مستويات الخدمة وتلبية احتياجاتكم، وضمان راحتكم طوال الرحلة.",
+        },
+      },
     },
     faq: {
       title: "الأسئلة الشائعة",
@@ -205,7 +277,7 @@ const PROMO_STYLE = {
   sectionPadding: "none",
   bannerHeight: "tall",
   bannerRadius: "lg",
-  overlayColor: "#0B2A4A",
+  overlayColor: "#01263B",
   titleColor: "50",
   titleFontWeight: "semibold",
   titleColorHover: "50",
@@ -219,6 +291,31 @@ const PROMO_STYLE = {
   buttonTextFontWeight: "medium",
   buttonTextHover: "btn",
   buttonTextFontWeightHover: "medium",
+  ...BACKLINKS,
+};
+
+const VALUES_STYLE = {
+  showTitle: true,
+  columns: "3",
+  cardGap: "default",
+  sectionPadding: "none",
+  showSectionBg: false,
+  sectionBg: "100",
+  cardBg: "50",
+  iconBg: "100",
+  iconColor: "900",
+  titleColor: "800",
+  titleFontWeight: "semibold",
+  titleColorHover: "800",
+  titleFontWeightHover: "semibold",
+  cardTitleColor: "secondary-2",
+  cardTitleFontWeight: "semibold",
+  cardTitleColorHover: "secondary-2",
+  cardTitleFontWeightHover: "semibold",
+  cardDescriptionColor: "700",
+  cardDescriptionFontWeight: "normal",
+  cardDescriptionColorHover: "700",
+  cardDescriptionFontWeightHover: "normal",
   ...BACKLINKS,
 };
 
@@ -292,6 +389,29 @@ function buildPromoContent(lang) {
   };
 }
 
+const VALUE_IDS = [
+  "safety",
+  "hospitality",
+  "sustainability",
+  "customerFocus",
+  "excellence",
+  "teamwork",
+];
+
+function buildValuesContent(lang) {
+  const t = TEXT[lang].values;
+  return {
+    title: t.title,
+    items: VALUE_IDS.map((id) => ({
+      id,
+      icon: id,
+      title: t.items[id].title,
+      description: t.items[id].description,
+    })),
+    links: [],
+  };
+}
+
 function buildFaqsContent(lang) {
   const t = TEXT[lang].faq;
   return {
@@ -322,6 +442,7 @@ const BLOCKS = [
     content: (lang) => buildJourneyContent(TEXT[lang].vision, VISION_IMG),
   },
   { type: PROMO_TYPE, style: PROMO_STYLE, content: buildPromoContent },
+  { type: VALUES_TYPE, style: VALUES_STYLE, content: buildValuesContent },
   { type: FAQS_TYPE, style: FAQS_STYLE, content: buildFaqsContent },
 ];
 
@@ -363,6 +484,72 @@ function componentTypeOf(link) {
   return component?.type || null;
 }
 
+function insertAboutValuesBlock(pageId, lang, token) {
+  const rows = curl("GET", "/rest/v1/page_components", {
+    token,
+    query: `page_id=eq.${pageId}&lang=eq.${lang}&select=id,position,components(type)&order=position.asc`,
+  });
+  if (!Array.isArray(rows)) {
+    console.error(`about-values patch lookup failed (${lang}):`, restError(rows, "unknown error"));
+    process.exit(1);
+  }
+  if (!rows.length) return false;
+
+  if (rows.some((row) => componentTypeOf(row) === VALUES_TYPE)) {
+    console.log(`about-values already present (${lang}) — skip patch.`);
+    return false;
+  }
+
+  const faqsRow = rows.find((row) => componentTypeOf(row) === FAQS_TYPE);
+  const insertPosition = faqsRow ? faqsRow.position : rows.length;
+
+  for (const row of rows) {
+    if (row.position < insertPosition) continue;
+    const patch = curl("PATCH", "/rest/v1/page_components", {
+      token,
+      query: `id=eq.${row.id}`,
+      prefer: "return=minimal",
+      body: { position: row.position + 1 },
+    });
+    if (patch?.message) {
+      console.error(`position shift failed (${lang}):`, restError(patch, "unknown error"));
+      process.exit(1);
+    }
+  }
+
+  const inserted = curl("POST", "/rest/v1/components", {
+    token,
+    prefer: "return=representation",
+    body: {
+      type: VALUES_TYPE,
+      position: insertPosition,
+      style: { [lang]: VALUES_STYLE },
+      content: { [lang]: buildValuesContent(lang) },
+    },
+  });
+  const comp = Array.isArray(inserted) ? inserted[0] : inserted;
+  if (!comp?.id) {
+    console.error(`about-values insert failed (${lang}):`, restError(inserted, "unknown error"));
+    process.exit(1);
+  }
+  const link = curl("POST", "/rest/v1/page_components", {
+    token,
+    prefer: "return=minimal",
+    body: {
+      page_id: pageId,
+      component_id: comp.id,
+      position: insertPosition,
+      lang,
+    },
+  });
+  if (link?.message) {
+    console.error(`about-values link failed (${lang}):`, restError(link, "unknown error"));
+    process.exit(1);
+  }
+  console.log(`patched about-values block (${lang}) at position ${insertPosition}:`, comp.id);
+  return true;
+}
+
 console.log("Target project:", url);
 
 const auth = curl("POST", "/auth/v1/token", {
@@ -383,6 +570,7 @@ for (const row of [
   { id: HERO_TYPE, label: "Page Media Hero" },
   { id: JOURNEY_TYPE, label: "Seat Journey" },
   { id: PROMO_TYPE, label: "Promo Banner" },
+  { id: VALUES_TYPE, label: "About Values" },
   { id: FAQS_TYPE, label: "FAQs" },
 ]) {
   const res = curl("POST", "/rest/v1/component_types", {
@@ -442,7 +630,8 @@ for (const lang of ["en", "ar"]) {
     process.exit(1);
   }
   if (links.length) {
-    console.log(`page already has ${links.length} ${lang} block(s) — skipping seed.`);
+    console.log(`page already has ${links.length} ${lang} block(s) — skipping full seed.`);
+    insertAboutValuesBlock(pageId, lang, token);
     continue;
   }
 

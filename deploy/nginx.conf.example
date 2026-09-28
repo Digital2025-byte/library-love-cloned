@@ -1,13 +1,13 @@
 # FlyCham CMS backend — nginx reverse proxy
-# Save as: /etc/nginx/sites-available/cms.flycham.com
-# Enable:  ln -s /etc/nginx/sites-available/cms.flycham.com /etc/nginx/sites-enabled/
+# Save as: /etc/nginx/sites-available/flycham-cms
+# Enable:  ln -s /etc/nginx/sites-available/flycham-cms /etc/nginx/sites-enabled/
 # Test:    nginx -t && systemctl reload nginx
-# TLS:     certbot --nginx -d cms.flycham.com   (adds the 443 server block + redirect)
+# Later, with a domain, add TLS: certbot --nginx -d cms.yourdomain.com
 
 server {
-    listen 80;
-    listen [::]:80;
-    server_name cms.flycham.com;   # <-- change to your subdomain
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;   # matches the raw IP 187.127.155.20; swap for a domain later
 
     # CORS is handled by the CMS app itself (Access-Control-Allow-Origin: *),
     # so nothing extra is needed here.

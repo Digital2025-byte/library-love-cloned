@@ -43,9 +43,9 @@ const TYPE_ID = "travel-experience-cards";
 
 const CARDS_META = [
   { id: "beforeYouFly", tint: "#01263b", href: "/travel-experience/before-you-fly", withLabel: true },
-  { id: "atTheAirport", tint: "#504834", href: "/travel-experience/at-the-airport", withLabel: false },
-  { id: "onboard", tint: "#006080", href: "/travel-experience/onboard", withLabel: false },
-  { id: "afterTravel", tint: "#01263b", href: "/travel-experience/after-travel", withLabel: false },
+  { id: "atTheAirport", tint: "#504834", href: "/travel-experience/at-the-airport", withLabel: true },
+  { id: "onboard", tint: "#006080", href: "/travel-experience/onboard", withLabel: true },
+  { id: "afterTravel", tint: "#01263b", href: "/travel-experience/after-travel", withLabel: true },
 ];
 
 const TEXT = {

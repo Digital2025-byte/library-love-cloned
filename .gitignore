@@ -34,3 +34,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local media backups written by scripts/sync-media-library.mjs (large binaries)
+scripts/.media-backup/

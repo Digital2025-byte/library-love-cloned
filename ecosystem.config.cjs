@@ -4,9 +4,10 @@
 //   Logs:    pm2 logs flycham-cms
 //   Boot:    pm2 startup && pm2 save   (restart on server reboot)
 //
-// nginx terminates TLS and proxies to HOST:PORT below, so the server binds to
-// localhost only. The Supabase publishable key is a PUBLIC key (the same one
-// shipped in the other apps' client bundles) — no service_role secret lives here.
+// The VPS already runs traefik on port 80/443, so this app is exposed directly
+// on port 3000 (HOST 0.0.0.0 = all interfaces) and the frontends call
+// http://<vps-ip>:3000. The Supabase publishable key is a PUBLIC key (the same
+// one shipped in the other apps' client bundles) — no service_role secret here.
 module.exports = {
   apps: [
     {
@@ -19,7 +20,7 @@ module.exports = {
       max_memory_restart: "512M",
       env: {
         NODE_ENV: "production",
-        HOST: "127.0.0.1",
+        HOST: "0.0.0.0",
         PORT: "3000",
         SUPABASE_URL: "https://xbqrfakpcisqunyugrqt.supabase.co",
         SUPABASE_PUBLISHABLE_KEY: "sb_publishable_DVuilPL7OZyKMZ266JYJGA_eEaVyfpL",

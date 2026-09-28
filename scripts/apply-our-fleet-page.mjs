@@ -56,6 +56,16 @@ const COMFORT_IMG = "/our-fleet/cabin-features.jpg";
 const CARGO_IMG = "/our-fleet/cargo.jpg";
 const ENTERTAINMENT_IMG = "/our-fleet/entertainment.jpg";
 
+const AIRCRAFT_IMG = "/our-fleet/aircraft.png";
+
+const FLEET_CARDS = [
+  { id: "baa-a320-233", name: "Airbus BAA A320-233", economy: 138, business: 12, totalSeats: 150 },
+  { id: "bac-a320-232", name: "Airbus BAC A320-232", economy: 141, business: 12, totalSeats: 153 },
+  { id: "bae-a320-231", name: "Airbus BAE A320-231", economy: 144, business: 12, totalSeats: 156 },
+  { id: "bag-a320-212", name: "Airbus BAG A320-212", economy: 144, business: 12, totalSeats: 156 },
+  { id: "bab-a320-211", name: "Airbus BAB A320-211", economy: 144, business: 12, totalSeats: 156 },
+];
+
 const TEXT = {
   en: {
     hero: {
@@ -69,6 +79,10 @@ const TEXT = {
         "Our fleet has been carefully selected to meet the destinations and services our customers expect. Each aircraft offers the highest levels of comfort, luxury, and safety, ensuring that every journey is unique and seamless. Our fleet consists of modern Airbus A320 aircraft, equipped with the latest technology and advanced safety systems, so passengers can travel with complete confidence, knowing that international safety standards are always upheld.",
         "Looking ahead, Fly Cham plans to expand its fleet by adding more aircraft to serve both domestic and international routes. By continuously enhancing and growing its operations, the airline aims to introduce new destinations, providing travelers with broader choices and exceptional travel experiences.",
       ],
+      economyLabel: "Economy",
+      businessLabel: "Business",
+      totalSeatsLabel: "Total seats",
+      imageAlt: "Fly Cham Airbus A320 aircraft",
     },
     modern: {
       title: "Modern convenience and classic comfort",
@@ -110,6 +124,10 @@ const TEXT = {
         "تم اختيار أسطولنا بعناية ليلبّي الوجهات والخدمات التي يتوقعها عملاؤنا. تقدّم كل طائرة أعلى مستويات الراحة والفخامة والأمان، بما يضمن أن تكون كل رحلة فريدة وسلسة. يتألف أسطولنا من طائرات إيرباص A320 الحديثة، المجهّزة بأحدث التقنيات وأنظمة السلامة المتقدمة، ليتمكّن المسافرون من السفر بثقة تامة مع العلم أن معايير السلامة الدولية مطبّقة دائماً.",
         "وتطلّعاً إلى المستقبل، تخطّط فلاي شام لتوسيع أسطولها بإضافة المزيد من الطائرات لخدمة الرحلات الداخلية والدولية. ومن خلال التطوير المستمر لعملياتها ونموّها، تهدف الشركة إلى إضافة وجهات جديدة، بما يوفّر للمسافرين خيارات أوسع وتجارب سفر استثنائية.",
       ],
+      economyLabel: "الدرجة السياحية",
+      businessLabel: "درجة رجال الأعمال",
+      totalSeatsLabel: "إجمالي المقاعد",
+      imageAlt: "طائرة إيرباص A320 من فلاي شام",
     },
     modern: {
       title: "راحة عصرية وأناقة كلاسيكية",
@@ -173,6 +191,11 @@ const EXPLORE_STYLE = {
   sectionPadding: "default",
   showSectionBg: false,
   sectionBg: "100",
+  showCards: true,
+  showCardImage: true,
+  showCardArrow: true,
+  columns: "3",
+  cardGap: "default",
   titleColor: "800",
   titleFontWeight: "semibold",
   titleColorHover: "800",
@@ -181,6 +204,22 @@ const EXPLORE_STYLE = {
   bodyFontWeight: "normal",
   bodyColorHover: "700",
   bodyFontWeightHover: "normal",
+  cardBg: "background",
+  cardBorderColor: "200",
+  cardNameColor: "primary-1",
+  cardNameFontWeight: "bold",
+  cardNameColorHover: "primary-1",
+  cardNameFontWeightHover: "bold",
+  cardMetaColor: "700",
+  cardMetaFontWeight: "normal",
+  cardMetaColorHover: "700",
+  cardMetaFontWeightHover: "normal",
+  cardTotalColor: "800",
+  cardTotalFontWeight: "semibold",
+  cardTotalColorHover: "800",
+  cardTotalFontWeightHover: "semibold",
+  arrowBg: "primary-1",
+  arrowColor: "50",
   ...BACKLINKS,
 };
 
@@ -245,6 +284,15 @@ function buildExploreContent(lang) {
     items: t.paragraphs.map((body, index) => ({
       id: `p${index + 1}`,
       body,
+    })),
+    economyLabel: t.economyLabel,
+    businessLabel: t.businessLabel,
+    totalSeatsLabel: t.totalSeatsLabel,
+    cards: FLEET_CARDS.map((card) => ({
+      ...card,
+      imageUrl: AIRCRAFT_IMG,
+      imageAlt: t.imageAlt,
+      href: "#",
     })),
     links: [],
   };
@@ -416,14 +464,49 @@ let pageId;
 for (const lang of ["en", "ar"]) {
   const links = curl("GET", "/rest/v1/page_components", {
     token,
-    query: `page_id=eq.${pageId}&lang=eq.${lang}&select=id`,
+    query: `page_id=eq.${pageId}&lang=eq.${lang}&select=id,position,component_id,components(id,type,content,style)`,
   });
   if (!Array.isArray(links)) {
     console.error(`page_components lookup failed (${lang}):`, restError(links, "unknown error"));
     process.exit(1);
   }
+
   if (links.length) {
-    console.log(`page already has ${links.length} ${lang} block(s) — skipping seed.`);
+    console.log(`page already has ${links.length} ${lang} block(s) — patching fleet-explore if present.`);
+    for (const row of links) {
+      const component = Array.isArray(row.components) ? row.components[0] : row.components;
+      if (!component?.id || component.type !== EXPLORE_TYPE) continue;
+
+      const existingContent =
+        component.content && typeof component.content === "object"
+          ? component.content
+          : {};
+      const existingStyle =
+        component.style && typeof component.style === "object"
+          ? component.style
+          : {};
+      const nextContent = {
+        ...existingContent,
+        [lang]: buildExploreContent(lang),
+      };
+      const nextStyle = {
+        ...existingStyle,
+        [lang]: { ...(existingStyle[lang] || {}), ...EXPLORE_STYLE },
+      };
+      const patched = curl("PATCH", `/rest/v1/components?id=eq.${component.id}`, {
+        token,
+        prefer: "return=minimal",
+        body: { content: nextContent, style: nextStyle },
+      });
+      if (patched?.message) {
+        console.error(
+          `fleet-explore patch failed (${lang}):`,
+          restError(patched, "unknown error")
+        );
+        process.exit(1);
+      }
+      console.log(`patched fleet-explore (${lang}):`, component.id);
+    }
     continue;
   }
 

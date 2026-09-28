@@ -16,6 +16,7 @@ type UpdateBody = {
   slug?: string;
   uid?: string;
   componentId?: string;
+  lang?: string;
   type?: string;
   position?: number;
   style?: { [key: string]: Json };
@@ -61,6 +62,7 @@ export const Route = createFileRoute("/api/public/update-component")({
           slug,
           uid,
         };
+        if (typeof body.lang === "string") payload.lang = body.lang.trim();
         if (typeof body.type === "string") payload.type = body.type;
         if (typeof body.position === "number") payload.position = body.position;
         if (body.style !== undefined) payload.style = asJsonMap(body.style);

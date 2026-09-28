@@ -128,24 +128,6 @@ function buildHubContent(lang) {
       description: item.description[lang],
       cta: item.cta[lang],
     })),
-    help: {
-      title:
-        lang === "ar"
-          ? "هل تحتاج إلى مساعدة في إيجاد إجابة؟"
-          : "Need Help Finding an Answer?",
-      description:
-        lang === "ar"
-          ? "اعثر على معلومات الاتصال والأسئلة الشائعة وخيارات الدعم التي تحتاجها في مركز مساعدة فلاي شام."
-          : "Find the contact information, FAQs, and support options you need in the Fly Cham Help Centre.",
-      cta: lang === "ar" ? "زيارة مركز المساعدة" : "Visit Help Center",
-      href: "/help",
-      imageUrl: "",
-      imageAlt:
-        lang === "ar"
-          ? "موظف خدمة عملاء في فلاي شام يرتدي سماعة رأس"
-          : "A Fly Cham customer service agent wearing a headset",
-      objectPosition: "70% center",
-    },
   };
 }
 
@@ -264,7 +246,7 @@ let pageId;
       body: {
         slug: PAGE_SLUG,
         label: "Legal Information",
-        description: "Legal hub with directory cards and a help banner",
+        description: "Legal hub with directory cards",
         status: "published",
       },
     });

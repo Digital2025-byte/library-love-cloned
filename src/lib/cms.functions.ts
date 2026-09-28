@@ -61,6 +61,8 @@ export type CreateCmsComponentInput = {
 export type UpdateCmsComponentInput = {
   slug: string;
   uid: string;
+  /** Language whose link to act on ("en" | "ar"); omitted = default language. */
+  lang?: string;
   type?: string;
   position?: number;
   style?: { [key: string]: Json };
@@ -70,12 +72,21 @@ export type UpdateCmsComponentInput = {
 export type DeleteCmsComponentInput = {
   slug: string;
   uid: string;
+  /**
+   * Language to unlink from ("en" | "ar"). Omitted removes the component from
+   * EVERY language of the page — the pre-language behaviour, and the only way
+   * to clear a legacy component that one seed linked to both languages.
+   */
+  lang?: string;
 };
 
 export type DeleteCmsComponentResult = {
   slug: string;
   uid: string;
+  /** First removed link; kept for callers written before `linkIds`. */
   linkId: string;
+  /** Every link removed (more than one only for a legacy shared component). */
+  linkIds: string[];
 };
 
 
@@ -282,23 +293,61 @@ async function requirePageId(supabase: CmsWriteClient, slug: string): Promise<st
   return page.id;
 }
 
+/**
+ * Every link between `pageId` and `uid`, ordered by language.
+ *
+ * A component normally has ONE link (its own language), but the constraint is
+ * `(page_id, component_id, lang)`, so a seed that linked a single component to
+ * both languages leaves two rows. Reading with `.maybeSingle()` turned that
+ * into a PostgREST "JSON object requested, multiple (or no) rows returned"
+ * failure, which surfaced as a 500 on delete and update — hence the list.
+ */
+async function findPageLinks(
+  supabase: CmsWriteClient,
+  pageId: string,
+  uid: string,
+) {
+  const { data, error } = await supabase
+    .from("page_components")
+    .select("id, position, page_id, component_id, lang")
+    .eq("page_id", pageId)
+    .eq("component_id", uid)
+    .order("lang", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 async function requirePageLink(
   supabase: CmsWriteClient,
   pageId: string,
   uid: string,
   slug: string,
+  lang?: string,
 ) {
-  const { data: link, error } = await supabase
-    .from("page_components")
-    .select("id, position, page_id, component_id, lang")
-    .eq("page_id", pageId)
-    .eq("component_id", uid)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!link) {
+  const links = await findPageLinks(supabase, pageId, uid);
+  if (!links.length) {
     throw new Error(`Component ${uid} is not on page ${slug}`);
   }
-  return link;
+
+  const wanted = normalizeLang(lang);
+  if (wanted) {
+    const match = links.find((link) => link.lang === wanted);
+    if (!match) {
+      throw new Error(
+        `Component ${uid} is not on page ${slug} in ${wanted}`,
+      );
+    }
+    return match;
+  }
+
+  // No language asked for: prefer the default language so a shared link
+  // resolves the same way every time instead of failing.
+  const fallback =
+    links.find((link) => link.lang === DEFAULT_LANGUAGE) ?? links[0];
+  if (!fallback) {
+    throw new Error(`Component ${uid} is not on page ${slug}`);
+  }
+  return fallback;
 }
 
 async function publicBlockForLink(
@@ -388,18 +437,34 @@ export async function deleteComponentFromPage(
   data: DeleteCmsComponentInput,
 ): Promise<DeleteCmsComponentResult> {
   const pageId = await requirePageId(supabase, data.slug);
-  const link = await requirePageLink(supabase, pageId, data.uid, data.slug);
+  const links = await findPageLinks(supabase, pageId, data.uid);
+  if (!links.length) {
+    throw new Error(`Component ${data.uid} is not on page ${data.slug}`);
+  }
 
+  // With a language, drop only that language's link — the other language keeps
+  // its own copy. Without one, drop every link this component has on the page.
+  const lang = normalizeLang(data.lang);
+  const targets = lang ? links.filter((link) => link.lang === lang) : links;
+  const primary = targets[0];
+  if (!primary) {
+    throw new Error(
+      `Component ${data.uid} is not on page ${data.slug} in ${lang}`,
+    );
+  }
+
+  const linkIds = targets.map((link) => link.id);
   const { error: unlinkError } = await supabase
     .from("page_components")
     .delete()
-    .eq("id", link.id);
+    .in("id", linkIds);
   if (unlinkError) throw new Error(unlinkError.message);
 
   return {
     slug: data.slug,
     uid: data.uid,
-    linkId: link.id,
+    linkId: primary.id,
+    linkIds,
   };
 }
 
@@ -412,7 +477,13 @@ export async function updateComponentForPage(
   data: UpdateCmsComponentInput,
 ): Promise<CmsPublicBlock> {
   const pageId = await requirePageId(supabase, data.slug);
-  const link = await requirePageLink(supabase, pageId, data.uid, data.slug);
+  const link = await requirePageLink(
+    supabase,
+    pageId,
+    data.uid,
+    data.slug,
+    data.lang,
+  );
 
   const patch: {
     type?: string;
@@ -572,7 +643,9 @@ export const deleteCmsComponent = createServerFn({ method: "POST" })
   .inputValidator((input: DeleteCmsComponentInput) => {
     if (!input?.slug) throw new Error("slug is required");
     if (!input?.uid) throw new Error("uid is required");
-    return { slug: input.slug, uid: input.uid };
+    const data: DeleteCmsComponentInput = { slug: input.slug, uid: input.uid };
+    if (input.lang) data.lang = input.lang;
+    return data;
   })
   .handler(async ({ data, context }): Promise<DeleteCmsComponentResult> => {
     return deleteComponentFromPage(context.supabase, data);

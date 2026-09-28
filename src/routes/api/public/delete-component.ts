@@ -12,13 +12,19 @@ type DeleteBody = {
   slug?: string;
   uid?: string;
   componentId?: string;
+  lang?: string;
 };
 
 function readUid(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-async function runDelete(request: Request, slug: string, uid: string) {
+async function runDelete(
+  request: Request,
+  slug: string,
+  uid: string,
+  lang: string,
+) {
   if (!requireBearer(request)) {
     return publicError(
       "Authorization: Bearer <supabase-access-token> is required",
@@ -37,6 +43,7 @@ async function runDelete(request: Request, slug: string, uid: string) {
     const result = await deleteComponentFromPage(createCmsClient(request), {
       slug,
       uid,
+      ...(lang ? { lang } : {}),
     });
     return publicJson({
       data: result,
@@ -59,6 +66,7 @@ export const Route = createFileRoute("/api/public/delete-component")({
           url.searchParams.get("uid")?.trim() ||
             url.searchParams.get("componentId")?.trim() ||
             "",
+          url.searchParams.get("lang")?.trim() ?? "",
         );
       },
       POST: async ({ request }) => {
@@ -72,6 +80,7 @@ export const Route = createFileRoute("/api/public/delete-component")({
           request,
           typeof body.slug === "string" ? body.slug.trim() : "",
           readUid(body.uid) || readUid(body.componentId),
+          readUid(body.lang),
         );
       },
     },
