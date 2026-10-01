@@ -1,0 +1,74 @@
+[
+  {
+    "label": "magazine-view/closing.jpg",
+    "status": "compressed+resized",
+    "before": 6595357,
+    "after": 401575,
+    "quality": 65,
+    "dims": "4000x6000 → 1233x1849"
+  },
+  {
+    "label": "magazine-view/destination-istanbul.jpg",
+    "status": "compressed+resized",
+    "before": 3758061,
+    "after": 401754,
+    "quality": 64,
+    "dims": "5472x3078 → 2560x1440"
+  },
+  {
+    "label": "magazine-view/feature-3.jpg",
+    "status": "compressed+resized",
+    "before": 3758061,
+    "after": 401754,
+    "quality": 64,
+    "dims": "5472x3078 → 2560x1440"
+  },
+  {
+    "label": "magazine-view/destination-dubai.jpg",
+    "status": "compressed+resized",
+    "before": 2571708,
+    "after": 397839,
+    "quality": 51,
+    "dims": "4000x3000 → 2560x1920"
+  },
+  {
+    "label": "magazine-view/feature-2.jpg",
+    "status": "compressed+resized",
+    "before": 2571708,
+    "after": 397839,
+    "quality": 51,
+    "dims": "4000x3000 → 2560x1920"
+  },
+  {
+    "label": "magazine-view/spread-1.jpg",
+    "status": "compressed",
+    "before": 2050212,
+    "after": 397040,
+    "quality": 83,
+    "dims": "1320x1624"
+  },
+  {
+    "label": "magazine-view/spread-2.jpg",
+    "status": "compressed",
+    "before": 1684761,
+    "after": 389681,
+    "quality": 87,
+    "dims": "1324x1624"
+  },
+  {
+    "label": "magazine-view/cover.jpg",
+    "status": "compressed",
+    "before": 1301893,
+    "after": 401078,
+    "quality": 93,
+    "dims": "1318x1624"
+  },
+  {
+    "label": "magazine-view/feature-1.jpg",
+    "status": "compressed",
+    "before": 515652,
+    "after": 173801,
+    "quality": "lossless",
+    "dims": "679x352"
+  }
+]

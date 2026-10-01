@@ -1,0 +1,115 @@
+[
+  {
+    "label": "our-destenations/ph2.webp",
+    "status": "cannot reach 400 KB at q>=50 (4000x6000)",
+    "before": 3922474
+  },
+  {
+    "label": "our-destenations/erbil.webp",
+    "status": "cannot reach 400 KB at q>=50 (5472x3648)",
+    "before": 2988542
+  },
+  {
+    "label": "our-destenations/ph4.webp",
+    "status": "cannot reach 400 KB at q>=50 (2992x3992)",
+    "before": 2811354
+  },
+  {
+    "label": "our-destenations/baghdad.webp",
+    "status": "cannot reach 400 KB at q>=50 (6000x4000)",
+    "before": 2304858
+  },
+  {
+    "label": "media-center/news-grid-3.webp",
+    "status": "cannot reach 400 KB at q>=50 (5472x3078)",
+    "before": 2070388
+  },
+  {
+    "label": "our-destenations/istanbul.webp",
+    "status": "cannot reach 400 KB at q>=50 (5472x3078)",
+    "before": 2070388
+  },
+  {
+    "label": "city-sights/hero.webp",
+    "status": "cannot reach 400 KB at q>=50 (3840x2560)",
+    "before": 1505342
+  },
+  {
+    "label": "our-destenations/abu-dhabi.webp",
+    "status": "compressed",
+    "before": 1352150,
+    "after": 404512,
+    "quality": 53,
+    "dims": "5869x3775"
+  },
+  {
+    "label": "media-center/news-grid-2.webp",
+    "status": "cannot reach 400 KB at q>=50 (4000x3000)",
+    "before": 1316490
+  },
+  {
+    "label": "our-destenations/dubai.webp",
+    "status": "cannot reach 400 KB at q>=50 (4000x3000)",
+    "before": 1316490
+  },
+  {
+    "label": "our-destenations/ph3.webp",
+    "status": "cannot reach 400 KB at q>=50 (3024x4032)",
+    "before": 1297694
+  },
+  {
+    "label": "1790606536504-2q9pi-rectangle-158099.png",
+    "status": "compressed",
+    "before": 1244828,
+    "after": 382662,
+    "quality": 95,
+    "dims": "1411x839"
+  },
+  {
+    "label": "our-destenations/yerevan.webp",
+    "status": "cannot reach 400 KB at q>=50 (5970x3980)",
+    "before": 1224132
+  },
+  {
+    "label": "our-destenations/dammam.webp",
+    "status": "cannot reach 400 KB at q>=50 (4024x2938)",
+    "before": 803428
+  },
+  {
+    "label": "our-destenations/sharja.webp",
+    "status": "compressed",
+    "before": 792052,
+    "after": 396796,
+    "quality": 53,
+    "dims": "4000x2250"
+  },
+  {
+    "label": "our-destenations/muscat.webp",
+    "status": "cannot reach 400 KB at q>=50 (6768x4511)",
+    "before": 782328
+  },
+  {
+    "label": "flights-to-damascus/hero.webp",
+    "status": "compressed",
+    "before": 606758,
+    "after": 400496,
+    "quality": 68,
+    "dims": "3840x2880"
+  },
+  {
+    "label": "things-to-do-in-damascus/hero.webp",
+    "status": "compressed",
+    "before": 606758,
+    "after": 400496,
+    "quality": 68,
+    "dims": "3840x2880"
+  },
+  {
+    "label": "our-responsibility/community.webp",
+    "status": "compressed",
+    "before": 431838,
+    "after": 399328,
+    "quality": 81,
+    "dims": "3277x4096"
+  }
+]

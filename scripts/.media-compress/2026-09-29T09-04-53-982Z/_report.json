@@ -1,0 +1,145 @@
+[
+  {
+    "label": "our-destenations/ph2.webp",
+    "status": "cannot reach 400 KB at q>=50 (4000x6000)",
+    "before": 3922474
+  },
+  {
+    "label": "our-destenations/erbil.webp",
+    "status": "cannot reach 400 KB at q>=50 (5472x3648)",
+    "before": 2988542
+  },
+  {
+    "label": "our-destenations/ph4.webp",
+    "status": "compressed+resized",
+    "before": 2811354,
+    "after": 404010,
+    "quality": 68,
+    "dims": "2992x3992 → 1919x2560"
+  },
+  {
+    "label": "flights-to-dubai/hero.jpg",
+    "status": "compressed+resized",
+    "before": 2571708,
+    "after": 397839,
+    "quality": 51,
+    "dims": "4000x3000 → 2560x1920"
+  },
+  {
+    "label": "our-destenations/baghdad.webp",
+    "status": "compressed+resized",
+    "before": 2304858,
+    "after": 391296,
+    "quality": 81,
+    "dims": "6000x4000 → 2560x1707"
+  },
+  {
+    "label": "flights-to-dubai/thing-al-fahidi.png",
+    "status": "cannot reach 400 KB at q>=50 (1024x1024)",
+    "before": 2110587
+  },
+  {
+    "label": "media-center/news-grid-3.webp",
+    "status": "compressed+resized",
+    "before": 2070388,
+    "after": 403412,
+    "quality": 68,
+    "dims": "5472x3078 → 2560x1440"
+  },
+  {
+    "label": "our-destenations/istanbul.webp",
+    "status": "compressed+resized",
+    "before": 2070388,
+    "after": 403412,
+    "quality": 68,
+    "dims": "5472x3078 → 2560x1440"
+  },
+  {
+    "label": "flights-to-dubai/thing-global-village.png",
+    "status": "compressed",
+    "before": 1642448,
+    "after": 401211,
+    "quality": 51,
+    "dims": "1024x1024"
+  },
+  {
+    "label": "flights-to-dubai/narrative-places.png",
+    "status": "compressed",
+    "before": 1539090,
+    "after": 395343,
+    "quality": 63,
+    "dims": "1024x1024"
+  },
+  {
+    "label": "city-sights/hero.webp",
+    "status": "compressed+resized",
+    "before": 1505342,
+    "after": 404160,
+    "quality": 57,
+    "dims": "3840x2560 → 2560x1707"
+  },
+  {
+    "label": "media-center/news-grid-2.webp",
+    "status": "compressed+resized",
+    "before": 1316490,
+    "after": 400104,
+    "quality": 61,
+    "dims": "4000x3000 → 2560x1920"
+  },
+  {
+    "label": "our-destenations/dubai.webp",
+    "status": "compressed+resized",
+    "before": 1316490,
+    "after": 400104,
+    "quality": 61,
+    "dims": "4000x3000 → 2560x1920"
+  },
+  {
+    "label": "our-destenations/ph3.webp",
+    "status": "compressed+resized",
+    "before": 1297694,
+    "after": 399358,
+    "quality": 57,
+    "dims": "3024x4032 → 1920x2560"
+  },
+  {
+    "label": "flights-to-dubai/narrative-activities.png",
+    "status": "compressed",
+    "before": 1288444,
+    "after": 349711,
+    "quality": 95,
+    "dims": "1024x1024"
+  },
+  {
+    "label": "our-destenations/yerevan.webp",
+    "status": "compressed+resized",
+    "before": 1224132,
+    "after": 399746,
+    "quality": 87,
+    "dims": "5970x3980 → 2560x1707"
+  },
+  {
+    "label": "flights-to-dubai/narrative-cuisine.png",
+    "status": "compressed",
+    "before": 1204863,
+    "after": 373909,
+    "quality": 84,
+    "dims": "1024x1024"
+  },
+  {
+    "label": "our-destenations/dammam.webp",
+    "status": "compressed+resized",
+    "before": 803428,
+    "after": 402412,
+    "quality": 82,
+    "dims": "4024x2938 → 2560x1869"
+  },
+  {
+    "label": "our-destenations/muscat.webp",
+    "status": "compressed+resized",
+    "before": 782328,
+    "after": 377754,
+    "quality": 90,
+    "dims": "6768x4511 → 2560x1706"
+  }
+]
