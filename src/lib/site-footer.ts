@@ -57,6 +57,8 @@ export type FooterSocialLink = {
 
 export type FooterLink = {
   id: string;
+  /** Optional Phosphor icon before the label ("" = none). */
+  icon: string;
   label: string;
   href: string;
   external: boolean;
@@ -65,6 +67,8 @@ export type FooterLink = {
 
 export type FooterColumn = {
   id: string;
+  /** Optional Phosphor icon before the title ("" = none). */
+  icon: string;
   title: string;
   href: string;
   group: FooterGroup;
@@ -223,6 +227,7 @@ function normalizeLink(raw: unknown, index: number): unknown {
   if (!isObj(raw)) return raw;
   return {
     id: or(raw.id, `link-${index + 1}`),
+    icon: or(raw.icon, ""),
     label: or(raw.label, ""),
     href: or(raw.href, ""),
     external: or(raw.external, false),
@@ -234,6 +239,7 @@ function normalizeColumn(raw: unknown, index: number): unknown {
   if (!isObj(raw)) return raw;
   return {
     id: or(raw.id, `column-${index + 1}`),
+    icon: or(raw.icon, ""),
     title: or(raw.title, ""),
     href: or(raw.href, ""),
     group: or(raw.group, (index % 4) + 1),
@@ -405,6 +411,7 @@ function checkSocial(c: Checker, item: unknown, path: string, ids: Set<string>) 
 function checkLink(c: Checker, link: unknown, path: string, ids: Set<string>) {
   if (!c.obj(link, path)) return;
   c.id(link.id, `${path}.id`, ids);
+  c.icon(link.icon, `${path}.icon`);
   c.str(link.label, `${path}.label`, FOOTER_LIMITS.label);
   c.href(link.href, `${path}.href`);
   c.bool(link.external, `${path}.external`);
@@ -414,6 +421,7 @@ function checkLink(c: Checker, link: unknown, path: string, ids: Set<string>) {
 function checkColumn(c: Checker, col: unknown, path: string, ids: Set<string>) {
   if (!c.obj(col, path)) return;
   c.id(col.id, `${path}.id`, ids);
+  c.icon(col.icon, `${path}.icon`);
   c.str(col.title, `${path}.title`, FOOTER_LIMITS.label);
   c.href(col.href, `${path}.href`);
   if (!(FOOTER_GROUPS as readonly unknown[]).includes(col.group)) {
