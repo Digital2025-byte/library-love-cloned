@@ -427,3 +427,50 @@ The public HTTP routes are the contract for **other** clients. The in-app list c
 5. Treat 404 on get-page as “no published page for this slug”.
 6. Do not cache (`Cache-Control: no-store`); refetch when content changes.
 7. For writes, use a real user JWT and an `admin` row in `user_roles` — the publishable key alone is not enough.
+
+---
+
+## Offers API
+
+Managed from the flychamadmin **Offers** module (`flychamadmin/src/offers`). Source of truth:
+[`src/lib/offers.ts`](../src/lib/offers.ts) (model + validator), [`src/lib/offers-http.ts`](../src/lib/offers-http.ts),
+[`src/routes/api/public/offers/`](../src/routes/api/public/offers/), migration
+[`20261004150000_create_offers.sql`](../supabase/migrations/20261004150000_create_offers.sql).
+
+| Method | Path | Auth | Notes |
+| --- | --- | --- | --- |
+| GET | `/api/public/offers?type=&status=&search=` | optional | Anonymous: live offers only (`state = active`). Admin bearer: all. |
+| POST | `/api/public/offers` | admin | Create → `201`. |
+| GET | `/api/public/offers/:id` | optional | RLS hides non-active offers from anonymous callers. |
+| PUT | `/api/public/offers/:id` | admin | Full replace of the editable fields. |
+| DELETE | `/api/public/offers/:id` | admin | `{ data: { id } }`. |
+| PATCH | `/api/public/offers/:id/status` | admin | `{ status: draft \| active \| inactive }`; `409 offer_expired` when activating an offer past its end date / passenger limit. |
+
+**Offer** (request and response; `state`, `usedPassengers`, `remainingPassengers`, timestamps are read-only):
+
+```json
+{
+  "code": "OW-DAM-IST",
+  "title": { "en": "One-way to Istanbul", "ar": "ذهاب فقط إلى إسطنبول" },
+  "description": { "en": "", "ar": "" },
+  "type": "destination | trip | baggage | seat | payment",
+  "tripType": "one_way | round_trip | multi_city (trip only, else null)",
+  "details": { "…": "per type, see below" },
+  "discount": { "type": "percentage | fixed", "value": 50, "currency": "USD (fixed only)" },
+  "expiry": { "type": "time | passengers", "startsAt": "ISO", "endsAt": "ISO (time only)", "maxPassengers": 100 },
+  "status": "draft | active | inactive",
+  "state": "draft | active | scheduled | expired | inactive"
+}
+```
+
+| `type` | `details` |
+| --- | --- |
+| destination | `{ origin: IATA \| null, destination: IATA, cabinClass: any\|economy\|business }` |
+| trip | `{ cabinClass, segments: [{ origin, destination }] }` — 1 segment (one-way / round-trip, return = reverse) or 2–6 (multi-city) |
+| baggage | `{ baggageType: checked\|cabin\|sports_equipment, weightKg: 1–100 }` |
+| seat | `{ seatType: standard\|extra_legroom\|exit_row\|front_row\|preferred, cabinClass }` |
+| payment | `{ paymentMethod: credit_card\|debit_card\|bank_transfer\|mobile_wallet\|cash, cardScheme: any\|visa\|mastercard\|amex (cards only), minSpend: number \| null }` |
+
+Errors: `400 invalid_offer` with `issues: [{ path, message }]`, `409 duplicate_code`, `401`, `403`, `404 not_found`.
+Passenger-based expiry is consumed by the booking flow through the service-role-only SQL function
+`public.consume_offer_passengers(offer_id, passengers)` (atomic; raises when the offer is not live or would overflow).

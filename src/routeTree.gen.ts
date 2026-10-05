@@ -18,6 +18,9 @@ import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-p
 import { Route as ApiPublicUpdateComponentRouteImport } from './routes/api/public/update-component'
 import { Route as ApiPublicUpdateFooterRouteImport } from './routes/api/public/update-footer'
 import { Route as ApiPublicUpdateHeaderRouteImport } from './routes/api/public/update-header'
+import { Route as ApiPublicOffersIndexRouteImport } from './routes/api/public/offers/index'
+import { Route as ApiPublicOffersIdRouteImport } from './routes/api/public/offers/$id'
+import { Route as ApiPublicOffersIdStatusRouteImport } from './routes/api/public/offers/$id.status'
 
 const ApiPublicCreateComponentRoute =
   ApiPublicCreateComponentRouteImport.update({
@@ -67,6 +70,21 @@ const ApiPublicUpdateHeaderRoute = ApiPublicUpdateHeaderRouteImport.update({
   path: '/api/public/update-header',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicOffersIndexRoute = ApiPublicOffersIndexRouteImport.update({
+  id: '/api/public/offers/',
+  path: '/api/public/offers/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOffersIdRoute = ApiPublicOffersIdRouteImport.update({
+  id: '/api/public/offers/$id',
+  path: '/api/public/offers/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicOffersIdStatusRoute = ApiPublicOffersIdStatusRouteImport.update({
+  id: '/status',
+  path: '/status',
+  getParentRoute: () => ApiPublicOffersIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
@@ -78,6 +96,9 @@ export interface FileRoutesByFullPath {
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
+  '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/offers/': typeof ApiPublicOffersIndexRoute
+  '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
 }
 export interface FileRoutesByTo {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
@@ -89,6 +110,9 @@ export interface FileRoutesByTo {
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
+  '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/offers': typeof ApiPublicOffersIndexRoute
+  '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -101,6 +125,9 @@ export interface FileRoutesById {
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
+  '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/offers/': typeof ApiPublicOffersIndexRoute
+  '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -114,6 +141,9 @@ export interface FileRouteTypes {
     | '/api/public/update-component'
     | '/api/public/update-footer'
     | '/api/public/update-header'
+    | '/api/public/offers/$id'
+    | '/api/public/offers/'
+    | '/api/public/offers/$id/status'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/api/public/create-component'
@@ -125,6 +155,9 @@ export interface FileRouteTypes {
     | '/api/public/update-component'
     | '/api/public/update-footer'
     | '/api/public/update-header'
+    | '/api/public/offers/$id'
+    | '/api/public/offers'
+    | '/api/public/offers/$id/status'
   id:
     | '__root__'
     | '/api/public/create-component'
@@ -136,6 +169,9 @@ export interface FileRouteTypes {
     | '/api/public/update-component'
     | '/api/public/update-footer'
     | '/api/public/update-header'
+    | '/api/public/offers/$id'
+    | '/api/public/offers/'
+    | '/api/public/offers/$id/status'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -148,6 +184,8 @@ export interface RootRouteChildren {
   ApiPublicUpdateComponentRoute: typeof ApiPublicUpdateComponentRoute
   ApiPublicUpdateFooterRoute: typeof ApiPublicUpdateFooterRoute
   ApiPublicUpdateHeaderRoute: typeof ApiPublicUpdateHeaderRoute
+  ApiPublicOffersIdRoute: typeof ApiPublicOffersIdRouteWithChildren
+  ApiPublicOffersIndexRoute: typeof ApiPublicOffersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -215,8 +253,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicUpdateHeaderRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/offers/': {
+      id: '/api/public/offers/'
+      path: '/api/public/offers'
+      fullPath: '/api/public/offers/'
+      preLoaderRoute: typeof ApiPublicOffersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/offers/$id': {
+      id: '/api/public/offers/$id'
+      path: '/api/public/offers/$id'
+      fullPath: '/api/public/offers/$id'
+      preLoaderRoute: typeof ApiPublicOffersIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/offers/$id/status': {
+      id: '/api/public/offers/$id/status'
+      path: '/status'
+      fullPath: '/api/public/offers/$id/status'
+      preLoaderRoute: typeof ApiPublicOffersIdStatusRouteImport
+      parentRoute: typeof ApiPublicOffersIdRoute
+    }
   }
 }
+
+interface ApiPublicOffersIdRouteChildren {
+  ApiPublicOffersIdStatusRoute: typeof ApiPublicOffersIdStatusRoute
+}
+
+const ApiPublicOffersIdRouteChildren: ApiPublicOffersIdRouteChildren = {
+  ApiPublicOffersIdStatusRoute: ApiPublicOffersIdStatusRoute,
+}
+
+const ApiPublicOffersIdRouteWithChildren =
+  ApiPublicOffersIdRoute._addFileChildren(ApiPublicOffersIdRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   ApiPublicCreateComponentRoute: ApiPublicCreateComponentRoute,
@@ -228,6 +298,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicUpdateComponentRoute: ApiPublicUpdateComponentRoute,
   ApiPublicUpdateFooterRoute: ApiPublicUpdateFooterRoute,
   ApiPublicUpdateHeaderRoute: ApiPublicUpdateHeaderRoute,
+  ApiPublicOffersIdRoute: ApiPublicOffersIdRouteWithChildren,
+  ApiPublicOffersIndexRoute: ApiPublicOffersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

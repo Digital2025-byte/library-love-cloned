@@ -129,7 +129,7 @@ export type HeaderStyle = {
 
 export type HeaderDocument = {
   schemaVersion: typeof HEADER_SCHEMA_VERSION;
-  logo: { lightUrl: string; darkUrl: string; alt: string; href: string };
+  logo: { lightUrl: string; darkUrl: string; alt: string; href: string; faviconUrl: string };
   login: { show: boolean; label: string; href: string };
   region: { show: boolean; label: string };
   /** Mobile menu extras (optional — clients fill it from their per-language default). */
@@ -197,6 +197,8 @@ export const DEFAULT_HEADER_LOGO = {
   darkUrl: `${MEDIA_BASE}/logo-dark.webp`,
   alt: "Fly Cham",
   href: "/",
+  // Browser tab icon (favicon).
+  faviconUrl: `${MEDIA_BASE}/tab-icon.webp`,
 };
 
 // ---------------------------------------------------------------------------
@@ -217,6 +219,7 @@ type Field =
   | "style"
   | "lightUrl"
   | "darkUrl"
+  | "faviconUrl"
   | "alt"
   | "href"
   | "show"
@@ -355,6 +358,7 @@ export function normalizeHeaderDocument(input: unknown): unknown {
           darkUrl: or(logo.darkUrl, DEFAULT_HEADER_LOGO.darkUrl),
           alt: or(logo.alt, DEFAULT_HEADER_LOGO.alt),
           href: or(logo.href, DEFAULT_HEADER_LOGO.href),
+          faviconUrl: or(logo.faviconUrl, DEFAULT_HEADER_LOGO.faviconUrl),
         }
       : logo,
     login: isObj(login)
@@ -572,6 +576,7 @@ export function parseHeaderDocument(input: unknown): ParseHeaderResult {
     c.asset(doc.logo.darkUrl, "logo.darkUrl", { required: true });
     c.str(doc.logo.alt, "logo.alt", HEADER_LIMITS.label);
     c.href(doc.logo.href, "logo.href");
+    c.asset(doc.logo.faviconUrl, "logo.faviconUrl");
   }
   if (c.obj(doc.login, "login")) {
     c.bool(doc.login.show, "login.show");
