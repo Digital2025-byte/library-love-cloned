@@ -1,0 +1,82 @@
+# CMS backend CI/CD.
+#
+#   pull request → main   typecheck + build (no deploy)
+#   push to main          typecheck + build, then deploy to the VPS
+#   "Run workflow" button redeploy main by hand (Actions → CMS CI/CD)
+#
+# Deploying = SSH to the VPS and run `update-cms <sha>` (deploy/update-cms.sh),
+# so the server builds exactly the commit that passed here and rolls itself
+# back if that build or its health check fails. One-time setup: DEPLOY.md,
+# "Automatic deploys (CI/CD)".
+
+name: CMS CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Typecheck & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20 # same major as the VPS
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - name: Build
+        run: |
+          cp .env.production.example .env.production
+          npm run build
+
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    # Never run two deploys at once; a newer push waits for the current one.
+    concurrency:
+      group: cms-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Configure SSH
+        env:
+          SSH_KEY: ${{ secrets.CMS_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.CMS_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+      - name: Run update-cms on the VPS
+        env:
+          SSH_HOST: ${{ secrets.CMS_SSH_HOST }}
+          SSH_USER: ${{ secrets.CMS_SSH_USER }}
+          SSH_PORT: ${{ secrets.CMS_SSH_PORT || '22' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" \
+            -o StrictHostKeyChecking=yes -o ServerAliveInterval=30 \
+            "$SSH_USER@$SSH_HOST" "update-cms ${GITHUB_SHA}"
+
+      - name: Check the public API
+        env:
+          SSH_HOST: ${{ secrets.CMS_SSH_HOST }}
+        run: |
+          code=$(curl -s -o /dev/null -m 15 -w '%{http_code}' "http://$SSH_HOST:3000/api/public/get-pages")
+          echo "GET /api/public/get-pages → HTTP $code"
+          [ "$code" -lt 500 ]

@@ -108,13 +108,96 @@ Set these to `https://cms.flycham.com`, then **rebuild & redeploy each app**
 
 ## 8. Updating after a code change
 
+Pushing to `main` deploys automatically (section 9). To deploy by hand, run on
+the server:
+
 ```bash
-cd /var/www/flycham-cms
-git pull                # or re-copy the folder
-npm ci
-npm run build
-pm2 reload flycham-cms  # zero-downtime restart
+update-cms              # latest origin/main
+update-cms <commit>     # a specific commit (e.g. to go back to an older release)
+FORCE=1 update-cms      # rebuild the current commit
 ```
+
+`update-cms` ([deploy/update-cms.sh](deploy/update-cms.sh)) fetches, checks out
+the commit, runs `npm ci` + `npm run build`, reloads PM2 and health-checks
+`/api/public/get-pages`. If the build or the health check fails it restores the
+previous commit and build, so the live API keeps serving the last good release.
+
+## 9. Automatic deploys (CI/CD)
+
+[.github/workflows/deploy.yml](.github/workflows/deploy.yml) runs on GitHub
+Actions:
+
+| Event | What runs |
+| --- | --- |
+| Pull request to `main` | typecheck + build (nothing is deployed) |
+| Push to `main` | typecheck + build, then SSH to the VPS and run `update-cms <sha>` |
+| Actions → **CMS CI/CD** → *Run workflow* | same as a push (manual redeploy) |
+
+A commit that fails the typecheck or the build never reaches the server.
+
+### One-time setup
+
+**A. Make the server folder a git clone.** The server pulls from GitHub, so it
+needs a read-only *deploy key* for the repo:
+
+```bash
+# on the VPS, as the user that runs pm2 (root)
+apt-get install -y git curl util-linux        # git, curl, flock
+ssh-keygen -t ed25519 -N "" -C "flycham-cms server" -f ~/.ssh/flycham_cms_repo
+cat >> ~/.ssh/config <<'EOF'
+Host github-flycham-cms
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/flycham_cms_repo
+  IdentitiesOnly yes
+EOF
+cat ~/.ssh/flycham_cms_repo.pub
+```
+
+Add that public key in GitHub → repo **Settings → Deploy keys → Add deploy key**
+(leave *Allow write access* off). Then replace the copied folder with a clone,
+keeping the env file:
+
+```bash
+cd /var/www
+mv flycham-cms flycham-cms.old
+git clone git@github-flycham-cms:Digital2025-byte/library-love-cloned.git flycham-cms
+cp flycham-cms.old/.env.production flycham-cms/ 2>/dev/null || true
+
+# install the command
+printf '#!/bin/sh\nexec bash /var/www/flycham-cms/deploy/update-cms.sh "$@"\n' > /usr/local/bin/update-cms
+chmod +x /usr/local/bin/update-cms
+
+FORCE=1 update-cms                             # first build from the clone
+rm -rf /var/www/flycham-cms.old                # once the API answers again
+```
+
+**B. Let GitHub Actions log in to the VPS.** Create a key pair used *only* by
+the pipeline (on your own machine):
+
+```bash
+ssh-keygen -t ed25519 -N "" -C "github-actions flycham-cms" -f cms_actions
+ssh-copy-id -i cms_actions.pub root@187.127.155.20     # or append to ~/.ssh/authorized_keys
+ssh-keyscan -t ed25519 187.127.155.20                    # → CMS_SSH_KNOWN_HOSTS
+```
+
+**C. Add the repository secrets** (GitHub → **Settings → Secrets and variables →
+Actions → New repository secret**):
+
+| Secret | Value |
+| --- | --- |
+| `CMS_SSH_HOST` | `187.127.155.20` |
+| `CMS_SSH_USER` | `root` (the user that owns the pm2 process) |
+| `CMS_SSH_KEY` | full contents of the private key `cms_actions` |
+| `CMS_SSH_KNOWN_HOSTS` | the `ssh-keyscan` output line |
+| `CMS_SSH_PORT` | optional, only if SSH is not on port 22 |
+
+Then delete the local `cms_actions` private key. The deploy job uses the GitHub
+environment **production** (created automatically on the first run); add
+*Required reviewers* to it if deploys should wait for a manual approval.
+
+**D. Test it:** Actions → **CMS CI/CD** → *Run workflow*. The *Deploy to VPS*
+log shows the `update-cms` output, ending with `deployed <sha>: <message>`.
 
 ---
 

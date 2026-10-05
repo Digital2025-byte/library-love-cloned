@@ -20,6 +20,8 @@ export default defineConfig({
   //    load time, throwing "__commonJSMin is not a function" at runtime.
   nitro: {
     preset: "node-server",
+    // @ts-expect-error — the wrapper's `nitro` type only declares preset/output/
+    // cloudflare, but it spreads every key into Nitro, so this works at runtime.
     inlineDynamicImports: true,
   },
   vite: {
