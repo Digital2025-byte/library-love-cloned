@@ -31,7 +31,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20 # same major as the VPS
+          node-version: 22 # same major as the VPS
           cache: npm
 
       - run: npm ci --no-audit --no-fund
@@ -74,9 +74,7 @@ jobs:
             "$SSH_USER@$SSH_HOST" "update-cms ${GITHUB_SHA}"
 
       - name: Check the public API
-        env:
-          SSH_HOST: ${{ secrets.CMS_SSH_HOST }}
         run: |
-          code=$(curl -s -o /dev/null -m 15 -w '%{http_code}' "http://$SSH_HOST:3000/api/public/get-pages")
+          code=$(curl -s -o /dev/null -m 15 -w '%{http_code}' "https://cms-api.cms-flycham.alpatrose.com/api/public/get-pages")
           echo "GET /api/public/get-pages → HTTP $code"
           [ "$code" -lt 500 ]

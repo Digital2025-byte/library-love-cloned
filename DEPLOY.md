@@ -22,6 +22,21 @@ security — there is **no `service_role` secret** on this server.
 > Requires a **Hostinger VPS** (KVM, root, Node 20+). Shared/web hosting cannot
 > run a Node server.
 
+## Fresh or wiped VPS: one command
+
+[deploy/bootstrap-vps.sh](deploy/bootstrap-vps.sh) rebuilds the whole stack:
+this backend (`:3000`), the public site from `fly-cham-cms` (`:4000`), Caddy
+with HTTPS for `cms-flycham.alpatrose.com` and `cms-api.cms-flycham.alpatrose.com`,
+pm2-on-boot and the GitHub Actions login key. As root on the VPS:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Digital2025-byte/library-love-cloned/main/deploy/bootstrap-vps.sh)
+```
+
+It pauses once to have you add the site repo's deploy key on GitHub, and writes
+the CI secrets for both repos to `/root/flycham-ci-secrets.txt`. Sections 1–9
+below are the manual steps it automates.
+
 ---
 
 ## 1. DNS
