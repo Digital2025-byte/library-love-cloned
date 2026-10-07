@@ -59,9 +59,17 @@ jobs:
           SSH_KNOWN_HOSTS: ${{ secrets.CMS_SSH_KNOWN_HOSTS }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          # The key may be pasted as-is (-----BEGIN ...) or as one base64 line
+          # (`base64 -w0 key` on the server), which survives copy/paste intact.
+          key="$(printf '%s' "$SSH_KEY" | tr -d '\r')"
+          case "$key" in
+            -----BEGIN*) printf '%s\n' "$key" > ~/.ssh/deploy_key ;;
+            *) printf '%s' "$key" | tr -d ' \n\t' | base64 -d > ~/.ssh/deploy_key ;;
+          esac
           chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh-keygen -y -f ~/.ssh/deploy_key > /dev/null \
+            || { echo "::error::the SSH key secret is not a valid private key, re-copy it"; exit 1; }
+          printf '%s\n' "$SSH_KNOWN_HOSTS" | tr -d '\r' > ~/.ssh/known_hosts
 
       - name: Run update-cms on the VPS
         env:
