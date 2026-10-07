@@ -54,6 +54,7 @@ function NotFoundComponent() {
         <li><code>POST /api/public/create-component</code></li>
         <li><code>POST /api/public/update-component</code></li>
         <li><code>POST /api/public/delete-component</code></li>
+        <li><code>POST /api/public/update-page-status</code></li>
       </ul>
     </main>
   );

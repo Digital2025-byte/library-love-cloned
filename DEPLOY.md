@@ -13,6 +13,7 @@ the Supabase database.
 | POST | `/api/public/create-component` | `Authorization: Bearer <supabase token>` | admin |
 | POST | `/api/public/update-component` | `Authorization: Bearer <supabase token>` | admin |
 | POST | `/api/public/delete-component` | `Authorization: Bearer <supabase token>` | admin |
+| POST/PATCH | `/api/public/update-page-status` — body `{ "id" or "slug", "status": "draft" or "published" }` | `Authorization: Bearer <supabase token>` | admin |
 
 The build is a **Node server** (Nitro `node-server` preset) → `.output/server/index.mjs`,
 run with `node .output/server/index.mjs`. It listens on `HOST`/`PORT` (default
