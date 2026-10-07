@@ -6,6 +6,10 @@ import {
   pickLanguage,
   styleForLang,
 } from "@/lib/cms-languages";
+import {
+  callerIsAdmin,
+  draftLangsFromDescription,
+} from "@/lib/page-language-drafts";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -105,10 +109,29 @@ export const Route = createFileRoute("/api/public/get-page")({
             404
           );
 
+        // A language kept as draft (`[[draft:ar]]`) is hidden from everyone
+        // but CMS admins — the public site then shows "page not found" there.
+        const draftLangs = draftLangsFromDescription(data.description);
+        const hiddenLangs =
+          draftLangs.length && !(await callerIsAdmin(supabase, request))
+            ? draftLangs
+            : [];
+        if (lang && (hiddenLangs as string[]).includes(lang))
+          return json(
+            {
+              error: {
+                message: `Page not published in "${lang}": ${slug}`,
+                code: "page_not_found",
+              },
+            },
+            404
+          );
+
         // Blocks are per-language: when `lang` is given, return only that
         // language's components. Without `lang` (legacy callers) return them all.
         const links = ((data.page_components ?? []) as PageComponentRow[])
           .filter((link) => !lang || link.lang === lang)
+          .filter((link) => !(hiddenLangs as string[]).includes(link.lang))
           .slice()
           .sort((a, b) => a.position - b.position);
 
@@ -152,6 +175,7 @@ export const Route = createFileRoute("/api/public/get-page")({
           description: data.description,
           status: data.status,
           isPublished: data.status === "published",
+          draftLangs,
           createdAt: data.created_at,
           updatedAt: data.updated_at,
           blocks,

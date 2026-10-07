@@ -6,6 +6,11 @@ import {
   writeFailure,
 } from "@/lib/cms-public-http";
 import { createCmsClient } from "./get-pages";
+import { normalizeLang } from "@/lib/cms-languages";
+import {
+  descriptionWithDraftLang,
+  draftLangsFromDescription,
+} from "@/lib/page-language-drafts";
 
 const PAGE_STATUSES = ["draft", "published"] as const;
 type PageStatus = (typeof PAGE_STATUSES)[number];
@@ -14,6 +19,7 @@ type StatusBody = {
   id?: string;
   slug?: string;
   status?: string;
+  lang?: string;
 };
 
 const PAGE_COLUMNS = "id, slug, label, description, status, created_at, updated_at";
@@ -44,15 +50,21 @@ function pagePayload(row: PageRow) {
     description: row.description,
     status: row.status,
     isPublished: row.status === "published",
+    draftLangs: draftLangsFromDescription(row.description),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 /**
- * POST|PATCH /api/public/update-page-status  { id | slug, status: draft | published }
+ * POST|PATCH /api/public/update-page-status
+ *   { id | slug, status: draft | published, lang?: en | ar }
  *
- * Switches a page between draft and published. Admin only: the caller's bearer
+ * Without `lang`: switches the whole page (every language) between draft and
+ * published. With `lang`: keeps just that language as draft (or publishes it
+ * again) via the `[[draft:…]]` description marker — see page-language-drafts.
+ * A language shows on the website only when the page AND that language are
+ * published. Admin only: the caller's bearer
  * token is forwarded to Supabase and the `pages` RLS (`is_admin()`) authorizes.
  * RLS filters a non-admin UPDATE to 0 rows without an error, so an empty result
  * on a page that exists is reported as 403.
@@ -76,6 +88,7 @@ async function handleStatus(request: Request) {
   const id = typeof body.id === "string" ? body.id.trim() : "";
   const slug = typeof body.slug === "string" ? body.slug.trim() : "";
   const status = typeof body.status === "string" ? body.status.trim().toLowerCase() : "";
+  const lang = body.lang === undefined ? null : normalizeLang(String(body.lang));
 
   if (!id && !slug) {
     return publicError("Missing required field: id or slug", "missing_page", 400);
@@ -86,6 +99,9 @@ async function handleStatus(request: Request) {
       "invalid_status",
       400,
     );
+  }
+  if (body.lang !== undefined && !lang) {
+    return publicError("Field `lang` must be one of: en, ar", "invalid_lang", 400);
   }
 
   try {
@@ -102,13 +118,19 @@ async function handleStatus(request: Request) {
       return publicError(`Page "${id || slug}" was not found`, "not_found", 404);
     }
     const row = current.data as unknown as PageRow;
-    if (row.status === status) {
-      return publicJson({ data: pagePayload(row), meta: { changed: false } });
+    const patch = lang
+      ? { description: descriptionWithDraftLang(row.description, lang, status === "draft") }
+      : { status };
+    const unchanged = lang
+      ? (patch.description ?? null) === (row.description ?? null)
+      : row.status === status;
+    if (unchanged) {
+      return publicJson({ data: pagePayload(row), meta: { changed: false, lang } });
     }
 
     const { data, error } = await supabase
       .from("pages")
-      .update({ status })
+      .update(patch)
       .eq("id", row.id)
       .select(PAGE_COLUMNS);
     if (error) return dbFailure(error.message);
@@ -122,7 +144,7 @@ async function handleStatus(request: Request) {
 
     return publicJson({
       data: pagePayload(data[0] as unknown as PageRow),
-      meta: { changed: true, generatedAt: new Date().toISOString() },
+      meta: { changed: true, lang, generatedAt: new Date().toISOString() },
     });
   } catch (error) {
     return writeFailure(error, "Status change failed");

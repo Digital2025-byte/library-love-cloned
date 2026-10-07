@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import { ensureWindowsSystemCa } from "@/lib/trust-windows-ca";
 import { dirFor, normalizeLang } from "@/lib/cms-languages";
+import { callerIsAdmin, draftLangsFromDescription } from "@/lib/page-language-drafts";
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -106,8 +107,14 @@ export const Route = createFileRoute("/api/public/get-pages")({
           );
 
         const rows = (data ?? []) as unknown as PageRow[];
+        // Draft languages (`[[draft:ar]]`) count as empty for non-admins.
+        const anyDrafts = rows.some((page) => draftLangsFromDescription(page.description).length);
+        const isAdmin = anyDrafts ? await callerIsAdmin(supabase, request) : false;
         const pages = rows.map((page) => {
-          const links = page.page_components ?? [];
+          const draftLangs = draftLangsFromDescription(page.description);
+          const links = (page.page_components ?? []).filter(
+            (link) => isAdmin || !(draftLangs as string[]).includes(link.lang),
+          );
           // With `lang`, count only that language's components (blocks are
           // per-language now); without it, count them all.
           const componentCount = lang
@@ -120,6 +127,7 @@ export const Route = createFileRoute("/api/public/get-pages")({
             description: page.description,
             status: page.status,
             isPublished: page.status === "published",
+            draftLangs,
             componentCount,
             createdAt: page.created_at,
             updatedAt: page.updated_at,
