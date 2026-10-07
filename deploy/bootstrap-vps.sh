@@ -242,6 +242,31 @@ route_traefik() {
     fi
   fi
 
+  # No file provider (e.g. the Hostinger Docker traefik: docker labels only):
+  # a do-nothing container on the host network carries the routes as labels,
+  # and traefik sends that traffic to the host's :4000 / :3000.
+  if [[ -z $out && -n $resolver ]] && grep -qi '^--providers\.docker\(=true\)\?$' <<<"$args" \
+     && command -v docker >/dev/null; then
+    local ep
+    ep="$(grep -io '^--entrypoints\.[^.]*\.address=:443$' <<<"$args" | head -1 | cut -d. -f2)"
+    log "routing through traefik (docker labels, resolver $resolver): $site → :4000, $api → :3000"
+    docker rm -f flycham-routes >/dev/null 2>&1 || true
+    docker run -d --name flycham-routes --restart unless-stopped --network host \
+      -l traefik.enable=true \
+      -l "traefik.http.routers.flycham-web.rule=Host(\`$site\`)" \
+      -l "traefik.http.routers.flycham-web.service=flycham-web" \
+      -l "traefik.http.routers.flycham-web.tls.certresolver=$resolver" \
+      ${ep:+-l "traefik.http.routers.flycham-web.entrypoints=$ep"} \
+      -l "traefik.http.services.flycham-web.loadbalancer.server.port=4000" \
+      -l "traefik.http.routers.flycham-api.rule=Host(\`$api\`)" \
+      -l "traefik.http.routers.flycham-api.service=flycham-api" \
+      -l "traefik.http.routers.flycham-api.tls.certresolver=$resolver" \
+      ${ep:+-l "traefik.http.routers.flycham-api.entrypoints=$ep"} \
+      -l "traefik.http.services.flycham-api.loadbalancer.server.port=3000" \
+      alpine:3 tail -f /dev/null >/dev/null
+    return
+  fi
+
   if [[ -z $out || -z $resolver || -z $upstream ]]; then
     echo "traefik: config dir='${out:-?}' certResolver='${resolver:-?}' upstream='${upstream:-?}'"
     echo "--- send this output to finish the HTTPS routing (blank out any tokens) ---"
