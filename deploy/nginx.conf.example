@@ -7,7 +7,7 @@
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name _;   # matches the raw IP 187.127.155.20; swap for a domain later
+    server_name _;   # matches the raw IP 191.215.44.115; swap for a domain later
 
     # CORS is handled by the CMS app itself (Access-Control-Allow-Origin: *),
     # so nothing extra is needed here.

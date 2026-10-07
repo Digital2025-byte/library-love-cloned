@@ -47,7 +47,7 @@ loadEnv();
 const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const key =
   process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-const CMS_API = process.env.CMS_API_BASE_URL || "http://187.127.155.20:3000";
+const CMS_API = process.env.CMS_API_BASE_URL || "https://cms-api.cms-flycham.alpatrose.com";
 
 const email = "admin@flycham.local";
 const password = "FlyChamAdmin!2026";

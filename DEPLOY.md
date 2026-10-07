@@ -192,8 +192,8 @@ the pipeline (on your own machine):
 
 ```bash
 ssh-keygen -t ed25519 -N "" -C "github-actions flycham-cms" -f cms_actions
-ssh-copy-id -i cms_actions.pub root@187.127.155.20     # or append to ~/.ssh/authorized_keys
-ssh-keyscan -t ed25519 187.127.155.20                    # → CMS_SSH_KNOWN_HOSTS
+ssh-copy-id -i cms_actions.pub root@191.215.44.115     # or append to ~/.ssh/authorized_keys
+ssh-keyscan -t ed25519 191.215.44.115                    # → CMS_SSH_KNOWN_HOSTS
 ```
 
 **C. Add the repository secrets** (GitHub → **Settings → Secrets and variables →
@@ -201,7 +201,7 @@ Actions → New repository secret**):
 
 | Secret | Value |
 | --- | --- |
-| `CMS_SSH_HOST` | `187.127.155.20` |
+| `CMS_SSH_HOST` | `191.215.44.115` |
 | `CMS_SSH_USER` | `root` (the user that owns the pm2 process) |
 | `CMS_SSH_KEY` | full contents of the private key `cms_actions` |
 | `CMS_SSH_KNOWN_HOSTS` | the `ssh-keyscan` output line |

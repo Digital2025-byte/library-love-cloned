@@ -22,7 +22,7 @@ main() {
 
   local site_domain="${SITE_DOMAIN:-cms-flycham.alpatrose.com}"
   local api_domain="${API_DOMAIN:-cms-api.cms-flycham.alpatrose.com}"
-  local ssh_host="${SSH_HOST:-187.127.155.20}"
+  local ssh_host="${SSH_HOST:-191.215.44.115}"
   local node_major="${NODE_MAJOR:-22}"
 
   local cms_dir=/var/www/flycham-cms
