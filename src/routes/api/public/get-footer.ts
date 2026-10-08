@@ -9,9 +9,9 @@ import {
 } from "@/lib/site-footer";
 import { createCmsClient } from "./get-pages";
 
-/** Public + CDN-cacheable: the footer changes rarely and must load fast. */
+/** Always fresh: a footer save must show on the website without waiting out a CDN cache. */
 const CACHE_HEADERS = {
-  "Cache-Control": "public, max-age=60, stale-while-revalidate=300",
+  "Cache-Control": "no-store",
 };
 
 export const Route = createFileRoute("/api/public/get-footer")({
