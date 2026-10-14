@@ -1,0 +1,1607 @@
+{
+  "info": {
+    "name": "Fly Cham CMS API",
+    "description": "REST API of the Fly Cham CMS backend (`cms/`, TanStack Start on the VPS) — pages & blocks, site header/footer, offers.\n\nBase URL (live): https://cms-api.cms-flycham.alpatrose.com — local dev: http://localhost:3000 (change `baseUrl`).\n\n**Auth:** reads are public. Writes need `Authorization: Bearer <Supabase access token>` of a CMS admin — run *0. Auth → Sign in* first (fill `supabaseKey`, `adminEmail`, `adminPassword`).\n\n**Errors** always look like `{ \"error\": { \"message\": \"…\", \"code\": \"…\" } }` (+ `issues[]` for validation errors).\n\nFull reference: `FlyCham-CMS-API-Documentation.md` (same folder).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://cms-api.cms-flycham.alpatrose.com",
+      "description": "CMS backend. Local: http://localhost:3000"
+    },
+    {
+      "key": "supabaseUrl",
+      "value": "https://xbqrfakpcisqunyugrqt.supabase.co",
+      "description": "Supabase project used by the CMS (for sign-in only)"
+    },
+    {
+      "key": "supabaseKey",
+      "value": "",
+      "description": "Supabase publishable (anon) key — SUPABASE_PUBLISHABLE_KEY in cms/.env"
+    },
+    {
+      "key": "adminEmail",
+      "value": "",
+      "description": "CMS admin email"
+    },
+    {
+      "key": "adminPassword",
+      "value": "",
+      "description": "CMS admin password"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "description": "Set by Sign in / Refresh token"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "description": "Set by Sign in / Refresh token"
+    },
+    {
+      "key": "lang",
+      "value": "en",
+      "description": "en | ar"
+    },
+    {
+      "key": "slug",
+      "value": "test-page",
+      "description": "Page slug used by page/component requests (test-page is safe to edit)"
+    },
+    {
+      "key": "uid",
+      "value": "",
+      "description": "Component id — set by Get page / Create component"
+    },
+    {
+      "key": "offerId",
+      "value": "",
+      "description": "Offer id — set by List offers / Create offer"
+    },
+    {
+      "key": "headerVersion",
+      "value": "null",
+      "description": "Set by Get header"
+    },
+    {
+      "key": "headerDocument",
+      "value": "{}",
+      "description": "Set by Get header (JSON)"
+    },
+    {
+      "key": "footerVersion",
+      "value": "null",
+      "description": "Set by Get footer"
+    },
+    {
+      "key": "footerDocument",
+      "value": "{}",
+      "description": "Set by Get footer (JSON)"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Auth (Supabase)",
+      "description": "Every WRITE endpoint needs `Authorization: Bearer <access token>` of a CMS **admin** user.\n\nThe token comes from Supabase Auth (the same project the CMS backend uses). Run **Sign in** once — its test script saves `accessToken` and `refreshToken` into the collection variables, and every write request in this collection already uses `Bearer {{accessToken}}`.\n\nAccess tokens expire after ~1 hour → run **Refresh token** (or Sign in again).\n\nFill the collection variables `supabaseKey` (the project's *publishable/anon* key — `SUPABASE_PUBLISHABLE_KEY` in `cms/.env`), `adminEmail` and `adminPassword` first.",
+      "item": [
+        {
+          "name": "Sign in (email + password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{supabaseKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{supabaseUrl}}/auth/v1/token?grant_type=password",
+              "host": [
+                "{{supabaseUrl}}/auth/v1/token"
+              ],
+              "path": [],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "password",
+                  "description": "Password grant"
+                }
+              ]
+            },
+            "description": "Supabase Auth password sign-in. Returns `access_token` (JWT, ~1h), `refresh_token`, `expires_in`, `user`.\n\nThe test script stores `accessToken` / `refreshToken` in the collection variables.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "const r = pm.response.json();",
+                  "if (r.access_token) {",
+                  "  pm.collectionVariables.set('accessToken', r.access_token);",
+                  "  pm.collectionVariables.set('refreshToken', r.refresh_token);",
+                  "  console.log('accessToken saved, expires in', r.expires_in, 's');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{supabaseKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{supabaseUrl}}/auth/v1/token?grant_type=refresh_token",
+              "host": [
+                "{{supabaseUrl}}/auth/v1/token"
+              ],
+              "path": [],
+              "query": [
+                {
+                  "key": "grant_type",
+                  "value": "refresh_token",
+                  "description": "Refresh grant"
+                }
+              ]
+            },
+            "description": "Exchange the saved refresh token for a new access token (refresh tokens are single-use; the new one is saved too).",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "const r = pm.response.json();",
+                  "if (r.access_token) {",
+                  "  pm.collectionVariables.set('accessToken', r.access_token);",
+                  "  pm.collectionVariables.set('refreshToken', r.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Am I a CMS admin? (rpc is_admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "apikey",
+                "value": "{{supabaseKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{supabaseUrl}}/rest/v1/rpc/is_admin",
+              "host": [
+                "{{supabaseUrl}}/rest/v1/rpc/is_admin"
+              ],
+              "path": []
+            },
+            "description": "Calls the database function the backend uses to authorize writes. Returns `true` for an admin token. A `false` here means every write endpoint will answer **403 forbidden**.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Pages",
+      "description": "Read the page list / one page with its ordered blocks (public, no token), and publish / unpublish pages (admin).",
+      "item": [
+        {
+          "name": "Get pages (list)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/get-pages?lang={{lang}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "get-pages"
+              ],
+              "query": [
+                {
+                  "key": "lang",
+                  "value": "{{lang}}",
+                  "description": "Optional. en | ar. With it, componentCount counts only that language's blocks."
+                },
+                {
+                  "key": "status",
+                  "value": "published",
+                  "description": "Optional. draft | published — filter by page status.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "All CMS pages ordered by slug, with how many components each holds.\n\nAnonymous callers only see **published** pages (RLS). Send an admin bearer to also see drafts and draft languages.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/get-pages?lang=en"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"data\": [\n    {\n      \"id\": \"a177c4ea-22b1-4a24-9df2-5d5a8be2b2b1\",\n      \"slug\": \"about-us\",\n      \"label\": \"About Us\",\n      \"description\": \"About Fly Cham — mission, vision, fleet, and FAQs\",\n      \"status\": \"published\",\n      \"isPublished\": true,\n      \"draftLangs\": [],\n      \"componentCount\": 8,\n      \"createdAt\": \"2026-09-21T10:25:11.143698+00:00\",\n      \"updatedAt\": \"2026-10-01T09:12:40.120000+00:00\"\n    }\n  ],\n  \"meta\": {\n    \"count\": 95,\n    \"publishedCount\": 95,\n    \"draftCount\": 0,\n    \"filters\": {\n      \"status\": null,\n      \"lang\": \"en\"\n    },\n    \"lang\": \"en\",\n    \"dir\": \"ltr\",\n    \"generatedAt\": \"2026-10-08T10:00:00.000Z\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "pm.test('has data[]', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get page by slug (one language)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/get-page?slug={{slug}}&lang={{lang}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "get-page"
+              ],
+              "query": [
+                {
+                  "key": "slug",
+                  "value": "{{slug}}",
+                  "description": "Required. Page slug, e.g. home, about-us, allowed-baggage."
+                },
+                {
+                  "key": "lang",
+                  "value": "{{lang}}",
+                  "description": "Optional. en | ar. Returns only that language's blocks, and narrows each block's content/style to { [lang]: {...} }."
+                }
+              ]
+            },
+            "description": "One page with its blocks sorted by position. This is what the public website calls for every CMS-driven route.\n\n`sectionId` = the component type (decides which React block renders it); `content` / `style` are per-language maps.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/get-page?slug=allowed-baggage&lang=en"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"00324343-5c8d-4d3c-909d-752cd1bfb270\",\n  \"slug\": \"allowed-baggage\",\n  \"label\": \"Allowed Baggage\",\n  \"description\": \"[[parent:travel-experience]]\\nBaggage allowance\",\n  \"status\": \"published\",\n  \"isPublished\": true,\n  \"draftLangs\": [],\n  \"createdAt\": \"2026-09-30T08:00:00.000Z\",\n  \"updatedAt\": \"2026-10-05T12:00:00.000Z\",\n  \"blocks\": [\n    {\n      \"uid\": \"f793ee43-673e-4de0-bc37-d0b1070e14c4\",\n      \"linkId\": \"a2b28eb7-e695-446c-8da9-461f5a80ed18\",\n      \"sectionId\": \"cta-banner\",\n      \"sectionLabel\": \"CTA Banner\",\n      \"position\": 4,\n      \"order\": 4,\n      \"languages\": [\n        \"en\"\n      ],\n      \"style\": {\n        \"en\": {\n          \"bannerHeight\": \"medium\",\n          \"showButton\": true,\n          \"titleColor\": \"50\",\n          \"titleFontWeight\": \"semibold\"\n        }\n      },\n      \"content\": {\n        \"en\": {\n          \"title\": \"Prohibited & Dangerous Items\",\n          \"imageAlt\": \"Dangerous items sign\",\n          \"imageUrl\": \"https://…/cms-media/allowed-baggage/cta.webp\",\n          \"links\": []\n        }\n      },\n      \"createdAt\": \"2026-10-01T09:00:00.000Z\",\n      \"updatedAt\": \"2026-10-03T09:00:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"blockCount\": 1,\n    \"sectionIds\": [\n      \"cta-banner\"\n    ],\n    \"languages\": [\n      \"en\"\n    ],\n    \"lang\": \"en\",\n    \"dir\": \"ltr\",\n    \"generatedAt\": \"2026-10-08T10:00:00.000Z\"\n  }\n}"
+            },
+            {
+              "name": "400 missing slug",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/get-page"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"message\": \"Missing required query param: slug\",\n    \"code\": \"missing_slug\"\n  }\n}"
+            },
+            {
+              "name": "404 not found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/get-page?slug=nope"
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": {\n    \"message\": \"Page not found: nope\",\n    \"code\": \"page_not_found\"\n  }\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "const r = pm.response.json();",
+                  "if (r.blocks && r.blocks.length) pm.collectionVariables.set('uid', r.blocks[0].uid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get page by slug (all languages, admin view)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/get-page?slug={{slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "get-page"
+              ],
+              "query": [
+                {
+                  "key": "slug",
+                  "value": "{{slug}}",
+                  "description": "Required. Page slug."
+                }
+              ]
+            },
+            "description": "Without `lang` every language's blocks are returned with the full `{ en, ar }` maps (legacy/editor view). With the admin bearer, languages kept as draft (`[[draft:ar]]`) are included as well."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Publish / unpublish whole page",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/update-page-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "update-page-status"
+              ]
+            },
+            "description": "Switch the whole page (every language) between `draft` and `published`. Identify the page by `slug` **or** `id`. Admin only.\n\nIf nothing changes, `meta.changed` is `false`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{slug}}\",\n  \"status\": \"published\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Keep one language as draft",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/update-page-status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "update-page-status"
+              ]
+            },
+            "description": "With `lang`, only that language is hidden (`draft`) or shown again (`published`) via the `[[draft:…]]` marker in the page description. The public site gets 404 for a draft language. POST and PATCH behave the same.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{slug}}\",\n  \"lang\": \"ar\",\n  \"status\": \"draft\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Page components (blocks)",
+      "description": "Add, edit, reorder and remove blocks on a page. Admin only.\n\n⚠️ These write to the LIVE database. The default `slug` variable is `test-page` — keep it there while experimenting.",
+      "item": [
+        {
+          "name": "Create component on page",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/create-component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "create-component"
+              ]
+            },
+            "description": "Creates a new component of `type` and links it to page `slug` in language `lang` (default `en`).\n\n`position` is optional — omitted = appended after the last block of that language. Returns the new block (201) — the test script saves its `uid`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{slug}}\",\n  \"type\": \"cta-banner\",\n  \"lang\": \"{{lang}}\",\n  \"style\": {\n    \"en\": {\n      \"bannerHeight\": \"medium\",\n      \"showButton\": true,\n      \"showTitle\": true,\n      \"showDescription\": true,\n      \"titleColor\": \"50\"\n    }\n  },\n  \"content\": {\n    \"en\": {\n      \"title\": \"Prohibited & Dangerous Items\",\n      \"description\": \"Check what you can't bring on board before you fly.\",\n      \"buttonLabel\": \"Learn more\",\n      \"buttonHref\": \"/help/faqs\",\n      \"buttonLinkType\": \"internal\",\n      \"buttonIcon\": \"ArrowRight\",\n      \"imageUrl\": \"\",\n      \"imageAlt\": \"\",\n      \"links\": []\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "const r = pm.response.json();",
+                  "if (r.data && r.data.uid) pm.collectionVariables.set('uid', r.data.uid);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update component content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/update-component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "update-component"
+              ]
+            },
+            "description": "Updates one block. Each language object you send **replaces** that language's stored object (send the full object, not one field); languages you don't send are kept. `style` merges the same way.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{slug}}\",\n  \"uid\": \"{{uid}}\",\n  \"lang\": \"{{lang}}\",\n  \"content\": {\n    \"en\": {\n      \"title\": \"New title\",\n      \"description\": \"New description\",\n      \"links\": []\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update component style",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/update-component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "update-component"
+              ]
+            },
+            "description": "Style is per-language: `{ en: {...}, ar: {...} }`. A flat object (no language keys) is applied to **both** languages.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{slug}}\",\n  \"uid\": \"{{uid}}\",\n  \"lang\": \"{{lang}}\",\n  \"style\": {\n    \"en\": {\n      \"bannerHeight\": \"large\",\n      \"titleColor\": \"primary-1\",\n      \"titleFontWeight\": \"bold\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Move component (change position)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/update-component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "update-component"
+              ]
+            },
+            "description": "Sets the block's position within its language on that page (lower = higher on the page). Other blocks are not renumbered — to reorder, send the new position of every moved block.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{slug}}\",\n  \"uid\": \"{{uid}}\",\n  \"lang\": \"{{lang}}\",\n  \"position\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete component from page (POST)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/delete-component",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "delete-component"
+              ]
+            },
+            "description": "Unlinks the block from the page in `lang`. Without `lang` it is removed from **every** language of the page. The component row itself is kept (not hard-deleted).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"{{slug}}\",\n  \"uid\": \"{{uid}}\",\n  \"lang\": \"{{lang}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete component from page (DELETE)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/delete-component?slug={{slug}}&uid={{uid}}&lang={{lang}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "delete-component"
+              ],
+              "query": [
+                {
+                  "key": "slug",
+                  "value": "{{slug}}",
+                  "description": "Required."
+                },
+                {
+                  "key": "uid",
+                  "value": "{{uid}}",
+                  "description": "Required. (componentId is accepted as an alias.)"
+                },
+                {
+                  "key": "lang",
+                  "value": "{{lang}}",
+                  "description": "Optional. Omit to unlink from every language."
+                }
+              ]
+            },
+            "description": "Same as the POST variant, with query parameters."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Site header",
+      "description": "The site header is ONE JSON document per language (table `site_header`). Read is public; save is admin-only with optimistic locking (`version`).\n\nWorkflow: run **Get header** (saves `headerVersion` and `headerDocument`), edit, then **Update header** sends them back. If someone saved in between you get **409 version_conflict** — reload and retry.\n\n⚠️ Update changes the LIVE website header.",
+      "item": [
+        {
+          "name": "Get header",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/get-header?lang={{lang}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "get-header"
+              ],
+              "query": [
+                {
+                  "key": "lang",
+                  "value": "{{lang}}",
+                  "description": "Optional. en (default) | ar. Anything else → 400 invalid_lang."
+                }
+              ]
+            },
+            "description": "Returns `{ data: { lang, document, version, updatedAt }, meta }`. 404 when no header was ever saved for that language (the website then uses its built-in default).\n\nCached by browsers/CDN for 60 s (`Cache-Control: public, max-age=60, stale-while-revalidate=300`).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200 or 404\", () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json().data;",
+                  "  pm.collectionVariables.set('headerVersion', String(d.version));",
+                  "  pm.collectionVariables.set('headerDocument', JSON.stringify(d.document));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update header",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/update-header",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "update-header"
+              ]
+            },
+            "description": "Saves the whole header document for one language. Body: `lang` (required), `version` (the version you loaded; `null` only when the header was never saved), `document` (full document).\n\nThe document is validated; problems come back as **400 invalid_document** with `issues: [{ path, message }]`. Success returns the saved row with `version + 1`. PUT and POST behave the same.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lang\": \"{{lang}}\",\n  \"version\": {{headerVersion}},\n  \"document\": {{headerDocument}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('headerVersion', String(pm.response.json().data.version));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Site footer",
+      "description": "The site footer is ONE JSON document per language (table `site_footer`). Read is public; save is admin-only with optimistic locking (`version`).\n\nWorkflow: run **Get footer** (saves `footerVersion` and `footerDocument`), edit, then **Update footer** sends them back. If someone saved in between you get **409 version_conflict** — reload and retry.\n\n⚠️ Update changes the LIVE website footer.",
+      "item": [
+        {
+          "name": "Get footer",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/get-footer?lang={{lang}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "get-footer"
+              ],
+              "query": [
+                {
+                  "key": "lang",
+                  "value": "{{lang}}",
+                  "description": "Optional. en (default) | ar. Anything else → 400 invalid_lang."
+                }
+              ]
+            },
+            "description": "Returns `{ data: { lang, document, version, updatedAt }, meta }`. 404 when no footer was ever saved for that language (the website then uses its built-in default).\n\nNever cached (`no-store`).",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200 or 404\", () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));",
+                  "if (pm.response.code === 200) {",
+                  "  const d = pm.response.json().data;",
+                  "  pm.collectionVariables.set('footerVersion', String(d.version));",
+                  "  pm.collectionVariables.set('footerDocument', JSON.stringify(d.document));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update footer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/update-footer",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "update-footer"
+              ]
+            },
+            "description": "Saves the whole footer document for one language. Body: `lang` (required), `version` (the version you loaded; `null` only when the footer was never saved), `document` (full document).\n\nThe document is validated; problems come back as **400 invalid_document** with `issues: [{ path, message }]`. Success returns the saved row with `version + 1`. PUT and POST behave the same.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lang\": \"{{lang}}\",\n  \"version\": {{footerVersion}},\n  \"document\": {{footerDocument}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set('footerVersion', String(pm.response.json().data.version));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Offers",
+      "description": "Promotional offers (table `offers`). 5 types: destination, trip (one_way / round_trip / multi_city), baggage, seat, payment. Each offer ends by date (`expiry.type = time`) or by passenger count (`passengers`).\n\nReads: anonymous callers get only live offers (`state = active`); an admin bearer sees all. Writes: admin only.\n\nOffer `code` must be unique — change it before re-running a create request.",
+      "item": [
+        {
+          "name": "List offers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/offers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "offers"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "destination",
+                  "description": "Optional. destination | trip | baggage | seat | payment",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Optional. draft | active | inactive",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "DAM",
+                  "description": "Optional. Matches code, title.en, title.ar (contains, case-insensitive).",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Newest first. With the admin bearer you get every offer; without it, only offers whose computed `state` is `active`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));",
+                  "const r = pm.response.json();",
+                  "if (r.data && r.data.length) pm.collectionVariables.set('offerId', r.data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get offer by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/offers/{{offerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "offers",
+                "{{offerId}}"
+              ]
+            },
+            "description": "One offer by its UUID. 400 `invalid_id` when the id is not a UUID, 404 when it doesn't exist (or isn't visible to you)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create offer — examples per type",
+          "item": [
+            {
+              "name": "Create destination offer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/offers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "public",
+                    "offers"
+                  ]
+                },
+                "description": "`details`: `origin` (IATA, optional), `destination` (IATA, required, ≠ origin), `cabinClass` (any | economy | business).",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"DAM-SUMMER-25\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"percentage\",\n    \"value\": 20\n  },\n  \"expiry\": {\n    \"type\": \"time\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"endsAt\": \"2026-12-31T23:59:59Z\"\n  },\n  \"status\": \"draft\",\n  \"type\": \"destination\",\n  \"details\": {\n    \"origin\": \"DAM\",\n    \"destination\": \"DXB\",\n    \"cabinClass\": \"economy\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                      "const r = pm.response.json();",
+                      "if (r.data && r.data.id) pm.collectionVariables.set('offerId', r.data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create one-way trip offer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/offers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "public",
+                    "offers"
+                  ]
+                },
+                "description": "`tripType` one_way / round_trip → exactly 1 segment.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"ONEWAY-DAM-AMM\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"percentage\",\n    \"value\": 20\n  },\n  \"expiry\": {\n    \"type\": \"time\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"endsAt\": \"2026-12-31T23:59:59Z\"\n  },\n  \"status\": \"draft\",\n  \"type\": \"trip\",\n  \"tripType\": \"one_way\",\n  \"details\": {\n    \"cabinClass\": \"any\",\n    \"segments\": [\n      {\n        \"origin\": \"DAM\",\n        \"destination\": \"AMM\"\n      }\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                      "const r = pm.response.json();",
+                      "if (r.data && r.data.id) pm.collectionVariables.set('offerId', r.data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create round-trip offer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/offers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "public",
+                    "offers"
+                  ]
+                },
+                "description": "Fixed discount needs a 3-letter `currency`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"RT-DAM-DXB\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"fixed\",\n    \"value\": 50,\n    \"currency\": \"USD\"\n  },\n  \"expiry\": {\n    \"type\": \"time\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"endsAt\": \"2026-12-31T23:59:59Z\"\n  },\n  \"status\": \"draft\",\n  \"type\": \"trip\",\n  \"tripType\": \"round_trip\",\n  \"details\": {\n    \"cabinClass\": \"economy\",\n    \"segments\": [\n      {\n        \"origin\": \"DAM\",\n        \"destination\": \"DXB\"\n      }\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                      "const r = pm.response.json();",
+                      "if (r.data && r.data.id) pm.collectionVariables.set('offerId', r.data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create multi-city offer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/offers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "public",
+                    "offers"
+                  ]
+                },
+                "description": "`multi_city` → 2–6 segments.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"MULTI-GULF\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"percentage\",\n    \"value\": 20\n  },\n  \"expiry\": {\n    \"type\": \"time\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"endsAt\": \"2026-12-31T23:59:59Z\"\n  },\n  \"status\": \"draft\",\n  \"type\": \"trip\",\n  \"tripType\": \"multi_city\",\n  \"details\": {\n    \"cabinClass\": \"business\",\n    \"segments\": [\n      {\n        \"origin\": \"DAM\",\n        \"destination\": \"DXB\"\n      },\n      {\n        \"origin\": \"DXB\",\n        \"destination\": \"DOH\"\n      },\n      {\n        \"origin\": \"DOH\",\n        \"destination\": \"DAM\"\n      }\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                      "const r = pm.response.json();",
+                      "if (r.data && r.data.id) pm.collectionVariables.set('offerId', r.data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create baggage offer (passenger limit)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/offers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "public",
+                    "offers"
+                  ]
+                },
+                "description": "`details`: `baggageType` (checked | cabin | sports_equipment), `weightKg` (1–100, whole number).\n\nThis one expires after 500 passengers instead of a date.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"BAG-EXTRA-10\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"percentage\",\n    \"value\": 20\n  },\n  \"expiry\": {\n    \"type\": \"passengers\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"maxPassengers\": 500\n  },\n  \"status\": \"draft\",\n  \"type\": \"baggage\",\n  \"details\": {\n    \"baggageType\": \"checked\",\n    \"weightKg\": 10\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                      "const r = pm.response.json();",
+                      "if (r.data && r.data.id) pm.collectionVariables.set('offerId', r.data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create seat offer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/offers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "public",
+                    "offers"
+                  ]
+                },
+                "description": "`details`: `seatType` (standard | extra_legroom | exit_row | front_row | preferred), `cabinClass`.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"SEAT-LEGROOM\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"percentage\",\n    \"value\": 20\n  },\n  \"expiry\": {\n    \"type\": \"time\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"endsAt\": \"2026-12-31T23:59:59Z\"\n  },\n  \"status\": \"draft\",\n  \"type\": \"seat\",\n  \"details\": {\n    \"seatType\": \"extra_legroom\",\n    \"cabinClass\": \"economy\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                      "const r = pm.response.json();",
+                      "if (r.data && r.data.id) pm.collectionVariables.set('offerId', r.data.id);"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Create payment offer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/public/offers",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "public",
+                    "offers"
+                  ]
+                },
+                "description": "`details`: `paymentMethod` (credit_card | debit_card | bank_transfer | mobile_wallet | cash), `cardScheme` (any | visa | mastercard | amex — cards only), `minSpend` (optional number).",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"VISA-10\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"percentage\",\n    \"value\": 10\n  },\n  \"expiry\": {\n    \"type\": \"time\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"endsAt\": \"2026-12-31T23:59:59Z\"\n  },\n  \"status\": \"draft\",\n  \"type\": \"payment\",\n  \"details\": {\n    \"paymentMethod\": \"credit_card\",\n    \"cardScheme\": \"visa\",\n    \"minSpend\": 200\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "response": [],
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                      "const r = pm.response.json();",
+                      "if (r.data && r.data.id) pm.collectionVariables.set('offerId', r.data.id);"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Update offer (full replace)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/offers/{{offerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "offers",
+                "{{offerId}}"
+              ]
+            },
+            "description": "PUT replaces every editable field — send the whole offer (same shape and rules as create).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DAM-SUMMER-25\",\n  \"title\": {\n    \"en\": \"Summer in Damascus\",\n    \"ar\": \"صيف في دمشق\"\n  },\n  \"description\": {\n    \"en\": \"Save on flights to Damascus this summer.\",\n    \"ar\": \"وفّر على رحلاتك إلى دمشق هذا الصيف.\"\n  },\n  \"discount\": {\n    \"type\": \"percentage\",\n    \"value\": 25\n  },\n  \"expiry\": {\n    \"type\": \"time\",\n    \"startsAt\": \"2026-10-10T00:00:00Z\",\n    \"endsAt\": \"2026-12-31T23:59:59Z\"\n  },\n  \"status\": \"draft\",\n  \"type\": \"destination\",\n  \"details\": {\n    \"origin\": \"DAM\",\n    \"destination\": \"DXB\",\n    \"cabinClass\": \"any\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change offer status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/offers/{{offerId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "offers",
+                "{{offerId}}",
+                "status"
+              ]
+            },
+            "description": "`status`: draft | active | inactive. Activating an offer whose end date / passenger limit is already reached → **409 offer_expired**.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete offer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/offers/{{offerId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "offers",
+                "{{offerId}}"
+              ]
+            },
+            "description": "Permanently deletes the offer. Returns `{ data: { id } }`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
