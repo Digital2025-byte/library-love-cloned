@@ -1,25 +1,22 @@
 /**
- * One-off admin task: make /coming-soon CMS-driven.
+ * Make /coming-soon CMS-driven.
  *
- *   1. Convert new_fly_cham's static hero (src/assets/images/coming-soon/hero.jpg)
- *      to WebP (<= 400 KB, sharp) and upload it to cms-media/coming-soon/hero.webp
- *      — skipped when the object already exists.
- *   2. Upsert component_types { id: "coming-soon-hero", label: "Coming Soon Hero" }.
- *   3. Ensure the page { slug: "coming-soon", label: "Coming Soon", status: "published" }.
- *   4. Seed ONE "coming-soon-hero" block per language (EN + AR) from
- *      new_fly_cham's comingSoon.* translations + the bucket image, only when
- *      that language has no blocks yet.
+ *   1. Upload new_fly_cham's plane illustration to
+ *      cms-media/coming-soon/plane.webp (skipped when the object exists).
+ *   2. Upsert component_types coming-soon-hero and media-newsletter-signup.
+ *   3. Ensure the page { slug: "coming-soon", status: "published" }.
+ *   4. Per language, seed or upgrade:
+ *        0 coming-soon-hero
+ *        1 media-newsletter-signup
+ *      A language that already has the current hero (cta + light background)
+ *      and the newsletter is left untouched.
  *
  * Idempotent. Run from cms/:
  *
  *   node scripts/apply-coming-soon-page.mjs [--dry-run]
- *
- * Behind the TLS-inspecting proxy run with
- *   NODE_EXTRA_CA_CERTS="C:\Users\malsaati\AppData\Local\Temp\corp-ca-bundle.pem"
  */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createRequire } from "node:module";
 
 for (const line of readFileSync(resolve(process.cwd(), ".env"), "utf8").split(/\r?\n/)) {
   const t = line.trim();
@@ -35,15 +32,8 @@ const key =
 if (!url || !key) throw new Error("SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY missing in cms/.env");
 const DRY_RUN = process.argv.includes("--dry-run");
 
-const require = createRequire(import.meta.url);
-let sharp;
-try {
-  sharp = require("sharp");
-} catch {
-  sharp = require(resolve(process.cwd(), "../flychamwebsite/node_modules/sharp"));
-}
-
-const TYPE = { id: "coming-soon-hero", label: "Coming Soon Hero" };
+const HERO_TYPE = { id: "coming-soon-hero", label: "Coming Soon Hero" };
+const NEWSLETTER_TYPE = { id: "media-newsletter-signup", label: "Media Newsletter Signup" };
 const PAGE = {
   slug: "coming-soon",
   label: "Coming Soon",
@@ -51,69 +41,103 @@ const PAGE = {
   status: "published",
 };
 const BUCKET = "cms-media";
-const OBJECT_PATH = "coming-soon/hero.webp";
+const OBJECT_PATH = "coming-soon/plane.webp";
 const IMAGE_URL = `${url}/storage/v1/object/public/${BUCKET}/${OBJECT_PATH}`;
-const SOURCE_IMAGE = resolve(process.cwd(), "../new_fly_cham/src/assets/images/coming-soon/hero.jpg");
-const TARGET = 400 * 1024;
-const MAX_DIM = 2560;
-const kb = (n) => `${Math.round(n / 1024)} KB`;
+const SOURCE_IMAGE = resolve(
+  process.cwd(),
+  "../new_fly_cham/src/assets/images-webp/coming-soon/plane.webp"
+);
+const PATTERN_URL =
+  "https://xbqrfakpcisqunyugrqt.supabase.co/storage/v1/object/public/cms-media/media-newsletter/pattern.png";
 
 const LOCALES = {
   en: JSON.parse(readFileSync(resolve(process.cwd(), "../new_fly_cham/src/i18n/locales/en.json"), "utf8")),
   ar: JSON.parse(readFileSync(resolve(process.cwd(), "../new_fly_cham/src/i18n/locales/ar.json"), "utf8")),
 };
 
-// Mirrors cms2 DEFAULT_COMING_SOON_HERO_STYLE (the static page look).
-const STYLE = {
-  overlayColor: "black",
-  overlayOpacity: 20,
-  titleColor: "50",
-  titleFontWeight: "bold",
-  titleColorHover: "50",
-  titleFontWeightHover: "bold",
-  descriptionColor: "50",
+const HERO_STYLE = {
+  backgroundColor: "100",
+  showButton: true,
+  showImage: true,
+  titleColor: "700",
+  titleFontWeight: "semibold",
+  titleColorHover: "700",
+  titleFontWeightHover: "semibold",
+  descriptionColor: "700",
   descriptionFontWeight: "normal",
-  descriptionColorHover: "50",
+  descriptionColorHover: "700",
   descriptionFontWeightHover: "normal",
-  descriptionOpacity: 90,
+  buttonBg: "primary-1",
+  buttonBgHover: "primary-800",
+  buttonText: "50",
+  buttonTextFontWeight: "medium",
+  buttonTextHover: "50",
+  buttonTextFontWeightHover: "medium",
+  showLinks: true,
+  linkColor: "primary-1",
+  linkHoverColor: "primary-2",
+  linkFontWeight: "semibold",
+  linkUnderline: "always",
+  linkItalic: false,
 };
 
-function contentFor(lang) {
+const NEWSLETTER_STYLE = {
+  sectionBg: "100",
+  cardBg: "background",
+  titleColor: "800",
+  titleFontWeight: "semibold",
+  titleColorHover: "800",
+  titleFontWeightHover: "semibold",
+  descriptionColor: "700",
+  descriptionFontWeight: "normal",
+  descriptionColorHover: "700",
+  descriptionFontWeightHover: "normal",
+  inputBg: "100",
+  inputText: "700",
+  buttonBg: "secondary",
+  buttonHoverBg: "",
+  buttonText: "btn",
+  buttonTextFontWeight: "semibold",
+  buttonTextHover: "btn",
+  buttonTextFontWeightHover: "semibold",
+  showLinks: true,
+  linkColor: "primary-1",
+  linkHoverColor: "primary-2",
+  linkFontWeight: "semibold",
+  linkUnderline: "always",
+  linkItalic: false,
+};
+
+function heroContent(lang) {
   const copy = LOCALES[lang].comingSoon || {};
   return {
     imageUrl: IMAGE_URL,
     imageAlt: copy.imageAlt || "",
     title: copy.title || "",
     description: copy.description || "",
+    ctaLabel: copy.backHome || "",
+    ctaHref: "/",
     links: [],
   };
 }
 
-/** Highest-quality WebP under TARGET; shrinks 15% per step if q50 won't fit. */
-async function toWebp(file) {
-  const meta = await sharp(file).metadata();
-  for (let dim = Math.min(MAX_DIM, Math.max(meta.width, meta.height)); dim >= 480; dim = Math.floor(dim * 0.85)) {
-    let lo = 50;
-    let hi = 90;
-    let best = null;
-    while (lo <= hi) {
-      const q = Math.floor((lo + hi) / 2);
-      const buf = await sharp(file)
-        .rotate()
-        .resize(dim, dim, { fit: "inside", withoutEnlargement: true })
-        .webp({ quality: q, effort: 6, smartSubsample: true })
-        .toBuffer();
-      if (buf.length <= TARGET) {
-        best = { buf, q };
-        lo = q + 1;
-      } else hi = q - 1;
-    }
-    if (best) {
-      const out = await sharp(best.buf).metadata();
-      return { ...best, dims: `${meta.width}x${meta.height} → ${out.width}x${out.height}` };
-    }
-  }
-  throw new Error(`${file}: cannot fit ${kb(TARGET)}`);
+function newsletterContent(lang) {
+  const copy = LOCALES[lang].mediaCenter?.newsletter || {};
+  return {
+    title: copy.title || "",
+    description: copy.description || "",
+    label: copy.label || "",
+    placeholder: copy.placeholder || "",
+    cta: copy.cta || "",
+    patternUrl: PATTERN_URL,
+    links: [],
+  };
+}
+
+function isCurrentHero(row, lang) {
+  const content = row?.components?.content?.[lang] || {};
+  const style = row?.components?.style?.[lang] || {};
+  return Boolean(String(content.ctaLabel || "").trim()) && style.backgroundColor && !style.overlayColor;
 }
 
 const auth = await (
@@ -144,14 +168,13 @@ async function rest(method, path, body, prefer = "return=representation") {
   return text ? JSON.parse(text) : null;
 }
 
-// 1. Image → cms-media/coming-soon/hero.webp (skip when present).
 {
   const head = await fetch(IMAGE_URL, { method: "HEAD" });
   if (head.ok) {
     console.log(`image: exists ${IMAGE_URL}`);
   } else {
-    const { buf, q, dims } = await toWebp(SOURCE_IMAGE);
-    console.log(`image: ${dims} q${q} ${kb(buf.length)}`);
+    const buf = readFileSync(SOURCE_IMAGE);
+    console.log(`image: ${Math.round(buf.length / 1024)} KB`);
     if (!DRY_RUN) {
       const up = await fetch(`${url}/storage/v1/object/${BUCKET}/${OBJECT_PATH}`, {
         method: "POST",
@@ -170,45 +193,76 @@ async function rest(method, path, body, prefer = "return=representation") {
   }
 }
 
-// 2. Component type.
 if (!DRY_RUN) {
-  await rest("POST", "component_types?on_conflict=id", TYPE, "resolution=merge-duplicates,return=minimal");
+  await rest(
+    "POST",
+    "component_types?on_conflict=id",
+    [HERO_TYPE, NEWSLETTER_TYPE],
+    "resolution=merge-duplicates,return=minimal"
+  );
 }
-console.log(`component_types: ${TYPE.id}${DRY_RUN ? " (would upsert)" : " ok"}`);
+console.log(`component_types: ${HERO_TYPE.id}, ${NEWSLETTER_TYPE.id}${DRY_RUN ? " (would upsert)" : " ok"}`);
 
-// 3. Page.
 let [page] = await rest("GET", `pages?select=id,status&slug=eq.${PAGE.slug}`);
 if (!page && !DRY_RUN) {
   [page] = await rest("POST", "pages", PAGE);
 }
 console.log(`page ${PAGE.slug}: ${page ? page.id : "(would create)"}`);
 
-// 4. One block per language when that language has none.
-for (const lang of ["en", "ar"]) {
-  if (page) {
-    const existing = await rest("GET", `page_components?page_id=eq.${page.id}&lang=eq.${lang}&select=id`);
-    if (existing.length) {
-      console.log(`  skip ${lang}: has ${existing.length} block(s)`);
-      continue;
-    }
-  }
-  const content = contentFor(lang);
-  if (DRY_RUN) {
-    console.log(`  ${lang}: would seed "${content.title}" — ${content.description}`);
-    continue;
-  }
+async function insertBlock(pageId, lang, type, position, style, content) {
   const [comp] = await rest("POST", "components", {
-    type: TYPE.id,
-    position: 0,
-    style: { [lang]: STYLE },
+    type,
+    position,
+    style: { [lang]: style },
     content: { [lang]: content },
   });
   await rest(
     "POST",
     "page_components",
-    { page_id: page.id, component_id: comp.id, position: 0, lang },
+    { page_id: pageId, component_id: comp.id, position, lang },
     "return=minimal"
   );
-  console.log(`  seeded ${lang}: 1 block`);
+  return comp.id;
 }
+
+for (const lang of ["en", "ar"]) {
+  const hero = heroContent(lang);
+  const newsletter = newsletterContent(lang);
+  if (!page) {
+    console.log(`  ${lang}: would seed "${hero.title}" + newsletter`);
+    continue;
+  }
+  const rows = await rest(
+    "GET",
+    `page_components?page_id=eq.${page.id}&lang=eq.${lang}&select=id,position,component_id,components(id,type,content,style)&order=position`
+  );
+  const heroRow = rows.find((row) => row.components?.type === HERO_TYPE.id);
+  const newsRow = rows.find((row) => row.components?.type === NEWSLETTER_TYPE.id);
+
+  if (heroRow && isCurrentHero(heroRow, lang) && newsRow) {
+    console.log(`  skip ${lang}: current hero + newsletter`);
+    continue;
+  }
+  if (DRY_RUN) {
+    console.log(`  ${lang}: would ${heroRow ? "update" : "seed"} hero and ${newsRow ? "keep" : "add"} newsletter`);
+    continue;
+  }
+
+  if (heroRow) {
+    await rest("PATCH", `components?id=eq.${heroRow.components.id}`, {
+      style: { ...(heroRow.components.style || {}), [lang]: HERO_STYLE },
+      content: { ...(heroRow.components.content || {}), [lang]: hero },
+    });
+    console.log(`  updated ${lang} hero ${heroRow.components.id}`);
+  } else {
+    const id = await insertBlock(page.id, lang, HERO_TYPE.id, 0, HERO_STYLE, hero);
+    console.log(`  seeded ${lang} hero ${id}`);
+  }
+
+  if (!newsRow) {
+    const id = await insertBlock(page.id, lang, NEWSLETTER_TYPE.id, 1, NEWSLETTER_STYLE, newsletter);
+    console.log(`  seeded ${lang} newsletter ${id}`);
+  }
+}
+
 console.log(DRY_RUN ? "Dry run — nothing written." : "Done.");

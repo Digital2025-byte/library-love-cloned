@@ -1,8 +1,8 @@
 /**
  * One-off admin task: make the 404 page a dynamic CMS page.
  *   1. Register the "not-found-hero" component type.
- *   2. Upload the cloud photo to cms-media/not-found/clouds.webp (from
- *      new_fly_cham's images-webp mirror; skipped if already there).
+ *   2. Upload the cloud photo to cms-media/not-found/clouds.jpg (from
+ *      new_fly_cham's bundled photo; skipped if already there).
  *   3. Ensure the "not-found" page row exists (published).
  *   4. Seed ONE not-found-hero block per language (EN + AR) when that language
  *      has no blocks yet — text from new_fly_cham's `notFound.*` locale strings,
@@ -44,8 +44,8 @@ const password = "FlyChamAdmin!2026";
 const PAGE_SLUG = "not-found";
 const TYPE = "not-found-hero";
 const LANGS = ["en", "ar"];
-const IMAGE_PATH = "not-found/clouds.webp";
-const IMAGE_FILE = resolve(process.cwd(), "../new_fly_cham/src/assets/images-webp/not-found/clouds.webp");
+const IMAGE_PATH = "not-found/clouds.jpg";
+const IMAGE_FILE = resolve(process.cwd(), "../new_fly_cham/src/assets/images/not-found/clouds.jpg");
 const IMAGE_URL = `${url}/storage/v1/object/public/cms-media/${IMAGE_PATH}`;
 
 // The original static 404 look (matches DEFAULT_NOT_FOUND_HERO_STYLE in cms2).
@@ -53,7 +53,7 @@ const STYLE = {
   height: "screen",
   overlayColor: "secondary-2",
   overlayOpacity: "40",
-  showEyebrow: true,
+  showEyebrow: false,
   showDescription: true,
   showButton: true,
   eyebrowColor: "50",
@@ -164,7 +164,7 @@ console.log("Signed in as", email);
     const res = curl("POST", `/storage/v1/object/cms-media/${IMAGE_PATH}`, {
       token,
       file: IMAGE_FILE,
-      contentType: "image/webp",
+      contentType: "image/jpeg",
     });
     if (!res?.Key && !res?.key && !res?.Id) fail(`image upload failed: ${restError(res, JSON.stringify(res))}`);
     console.log("image uploaded:", IMAGE_PATH);
@@ -173,11 +173,21 @@ console.log("Signed in as", email);
 
 let pageId;
 {
-  const existing = curl("GET", "/rest/v1/pages", { token, query: `slug=eq.${PAGE_SLUG}&select=id` });
+  const existing = curl("GET", "/rest/v1/pages", { token, query: `slug=eq.${PAGE_SLUG}&select=id,label` });
   if (!Array.isArray(existing)) fail(`pages lookup failed: ${restError(existing, "?")}`);
   if (existing[0]?.id) {
     pageId = existing[0].id;
     console.log("page exists:", PAGE_SLUG, pageId);
+    if (!existing[0].label || existing[0].label === PAGE_SLUG) {
+      const renamed = curl("PATCH", "/rest/v1/pages", {
+        token,
+        query: `id=eq.${pageId}`,
+        prefer: "return=minimal",
+        body: { label: "Not Found", description: "Shown for every page that does not exist", status: "published" },
+      });
+      if (renamed?.message) fail(`pages rename failed: ${restError(renamed, "?")}`);
+      console.log("page label: Not Found");
+    }
   } else {
     const inserted = curl("POST", "/rest/v1/pages", {
       token,

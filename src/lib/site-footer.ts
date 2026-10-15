@@ -32,6 +32,7 @@ export const FOOTER_LIMITS = {
   label: 80,
   copyright: 200,
   followText: 200,
+  description: 200,
   href: 500,
   id: 80,
   styleToken: 40,
@@ -118,6 +119,7 @@ export type FooterDocument = {
     logoAlt: string;
     logoHref: string;
     followText: string;
+    description: string;
     patternUrl: string;
   };
   social: FooterSocialLink[];
@@ -165,6 +167,7 @@ export const DEFAULT_FOOTER_BRAND = {
   logoAlt: "Fly Cham",
   logoHref: "/",
   followText: "",
+  description: "",
   patternUrl: `${MEDIA_BASE}/footer-pattern.webp`,
 };
 
@@ -183,6 +186,7 @@ type Field =
   | "logoAlt"
   | "logoHref"
   | "followText"
+  | "description"
   | "patternUrl"
   | "id"
   | "icon"
@@ -283,6 +287,7 @@ export function normalizeFooterDocument(input: unknown): unknown {
           logoAlt: or(brand.logoAlt, DEFAULT_FOOTER_BRAND.logoAlt),
           logoHref: or(brand.logoHref, DEFAULT_FOOTER_BRAND.logoHref),
           followText: or(brand.followText, DEFAULT_FOOTER_BRAND.followText),
+          description: or(brand.description, DEFAULT_FOOTER_BRAND.description),
           patternUrl: or(brand.patternUrl, DEFAULT_FOOTER_BRAND.patternUrl),
         }
       : brand,
@@ -480,6 +485,7 @@ export function parseFooterDocument(input: unknown): ParseFooterResult {
     c.str(doc.brand.logoAlt, "brand.logoAlt", FOOTER_LIMITS.label);
     c.href(doc.brand.logoHref, "brand.logoHref");
     c.str(doc.brand.followText, "brand.followText", FOOTER_LIMITS.followText);
+    c.str(doc.brand.description, "brand.description", FOOTER_LIMITS.description);
     c.asset(doc.brand.patternUrl, "brand.patternUrl");
   }
   if (c.array(doc.social, "social", FOOTER_LIMITS.social)) {

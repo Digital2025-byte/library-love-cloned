@@ -22,6 +22,8 @@ import { Route as ApiPublicUpdatePageStatusRouteImport } from './routes/api/publ
 import { Route as ApiPublicOffersIndexRouteImport } from './routes/api/public/offers/index'
 import { Route as ApiPublicOffersIdRouteImport } from './routes/api/public/offers/$id'
 import { Route as ApiPublicOffersIdStatusRouteImport } from './routes/api/public/offers/$id.status'
+import { Route as ApiPublicDestinationCategoriesIndexRouteImport } from './routes/api/public/destination-categories/index'
+import { Route as ApiPublicDestinationCategoriesIdRouteImport } from './routes/api/public/destination-categories/$id'
 
 const ApiPublicCreateComponentRoute =
   ApiPublicCreateComponentRouteImport.update({
@@ -92,6 +94,18 @@ const ApiPublicOffersIdStatusRoute = ApiPublicOffersIdStatusRouteImport.update({
   path: '/status',
   getParentRoute: () => ApiPublicOffersIdRoute,
 } as any)
+const ApiPublicDestinationCategoriesIndexRoute =
+  ApiPublicDestinationCategoriesIndexRouteImport.update({
+    id: '/api/public/destination-categories/',
+    path: '/api/public/destination-categories/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDestinationCategoriesIdRoute =
+  ApiPublicDestinationCategoriesIdRouteImport.update({
+    id: '/api/public/destination-categories/$id',
+    path: '/api/public/destination-categories/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
@@ -107,6 +121,8 @@ export interface FileRoutesByFullPath {
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
   '/api/public/offers/': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
+  '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
+  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
 }
 export interface FileRoutesByTo {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
@@ -122,6 +138,8 @@ export interface FileRoutesByTo {
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
   '/api/public/offers': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
+  '/api/public/destination-categories': typeof ApiPublicDestinationCategoriesIndexRoute
+  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -138,6 +156,8 @@ export interface FileRoutesById {
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
   '/api/public/offers/': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
+  '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
+  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -155,6 +175,8 @@ export interface FileRouteTypes {
     | '/api/public/offers/$id'
     | '/api/public/offers/'
     | '/api/public/offers/$id/status'
+    | '/api/public/destination-categories/'
+    | '/api/public/destination-categories/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/api/public/create-component'
@@ -170,6 +192,8 @@ export interface FileRouteTypes {
     | '/api/public/offers/$id'
     | '/api/public/offers'
     | '/api/public/offers/$id/status'
+    | '/api/public/destination-categories'
+    | '/api/public/destination-categories/$id'
   id:
     | '__root__'
     | '/api/public/create-component'
@@ -185,6 +209,8 @@ export interface FileRouteTypes {
     | '/api/public/offers/$id'
     | '/api/public/offers/'
     | '/api/public/offers/$id/status'
+    | '/api/public/destination-categories/'
+    | '/api/public/destination-categories/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -200,6 +226,8 @@ export interface RootRouteChildren {
   ApiPublicUpdatePageStatusRoute: typeof ApiPublicUpdatePageStatusRoute
   ApiPublicOffersIdRoute: typeof ApiPublicOffersIdRouteWithChildren
   ApiPublicOffersIndexRoute: typeof ApiPublicOffersIndexRoute
+  ApiPublicDestinationCategoriesIndexRoute: typeof ApiPublicDestinationCategoriesIndexRoute
+  ApiPublicDestinationCategoriesIdRoute: typeof ApiPublicDestinationCategoriesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -295,6 +323,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicOffersIdStatusRouteImport
       parentRoute: typeof ApiPublicOffersIdRoute
     }
+    '/api/public/destination-categories/': {
+      id: '/api/public/destination-categories/'
+      path: '/api/public/destination-categories'
+      fullPath: '/api/public/destination-categories/'
+      preLoaderRoute: typeof ApiPublicDestinationCategoriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/destination-categories/$id': {
+      id: '/api/public/destination-categories/$id'
+      path: '/api/public/destination-categories/$id'
+      fullPath: '/api/public/destination-categories/$id'
+      preLoaderRoute: typeof ApiPublicDestinationCategoriesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -322,6 +364,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicUpdatePageStatusRoute: ApiPublicUpdatePageStatusRoute,
   ApiPublicOffersIdRoute: ApiPublicOffersIdRouteWithChildren,
   ApiPublicOffersIndexRoute: ApiPublicOffersIndexRoute,
+  ApiPublicDestinationCategoriesIndexRoute: ApiPublicDestinationCategoriesIndexRoute,
+  ApiPublicDestinationCategoriesIdRoute: ApiPublicDestinationCategoriesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

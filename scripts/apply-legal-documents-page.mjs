@@ -188,11 +188,8 @@ function buildPrivacyDoc(lang) {
     summaryTitle: page.summary.title,
     summaryIntro: page.summary.intro,
     summaryPoints: page.summary.points || [],
-    tocTitle: page.toc.title,
-    tocItems: (page.toc.items || []).map((text, index) => ({
-      text,
-      href: `#legal-section-${index + 1}`,
-    })),
+    tocTitle: "",
+    tocItems: [],
     inShortLabel: page.inShortLabel,
     sections: mapCardSections(page.sections),
     contact: { variant: "hidden" },
@@ -329,7 +326,7 @@ const PAGES = [
     pageKey: "privacy",
     doc: buildPrivacyDoc,
     moreIds: ["cookies", "terms"],
-    docStyle: {},
+    docStyle: { columnGap: "relaxed" },
   },
   {
     slug: "cookies",
