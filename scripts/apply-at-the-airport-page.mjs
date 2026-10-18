@@ -1,6 +1,6 @@
 /**
  * One-off admin task for the At the Airport page (Figma 39457:12163):
- *   1. Register the airport-service-cards component type.
+ *   1. Register the seat-plan component type.
  *   2. Upload the Figma photos to cms-media/at-the-airport/*.webp.
  *   3. Ensure the "at-the-airport" page row exists (child of travel-experience
  *      on the public site; the CMS slug stays flat).
@@ -8,7 +8,7 @@
  *      existing order is not the design:
  *        0 breadcrumbs
  *        1 page-media-hero
- *        2 airport-service-cards
+ *        2 seat-plan
  *        3 promo-banner
  *
  *   node scripts/apply-at-the-airport-page.mjs
@@ -55,12 +55,12 @@ const UPLOADS = [
   "priority-boarding.webp",
   "support.webp",
 ];
-const EXPECTED = ["breadcrumbs", "page-media-hero", "airport-service-cards", "promo-banner"];
+const EXPECTED = ["breadcrumbs", "page-media-hero", "seat-plan", "promo-banner"];
 
 const COMPONENT_TYPES = [
   { id: "breadcrumbs", label: "Breadcrumbs" },
   { id: "page-media-hero", label: "Page Media Hero" },
-  { id: "airport-service-cards", label: "Airport Service Cards" },
+  { id: "seat-plan", label: "Seat Plan" },
   { id: "promo-banner", label: "Promo Banner" },
 ];
 
@@ -118,25 +118,20 @@ const HERO_STYLE = {
 const CARDS_STYLE = {
   ...LAYOUT,
   showHeader: true,
-  showTitle: true,
-  showSubtitle: true,
+  showDescription: true,
   headerAlign: "center",
   columns: "3",
   cardGap: "default",
   cardRadius: "lg",
-  imageHeight: "default",
   ...text("titleColor", "700", "semibold"),
-  ...text("subtitleColor", "700", "normal"),
+  ...text("descriptionColor", "700", "normal"),
   cardBg: "background",
-  showCardShadow: true,
   ...text("cardTitleColor", "700", "semibold"),
   ...text("cardDescriptionColor", "700", "normal"),
-  showLink: true,
-  showLinkIcon: true,
-  learnMoreColor: "primary-1",
-  learnMoreFontWeight: "semibold",
-  learnMoreColorHover: "50",
-  learnMoreFontWeightHover: "semibold",
+  buttonText: "primary-1",
+  buttonTextFontWeight: "semibold",
+  buttonTextHover: "50",
+  buttonTextFontWeightHover: "semibold",
   arrowBadgeBg: "primary-1",
   arrowColor: "50",
   ...BACKLINKS,
@@ -294,20 +289,19 @@ function buildBlocks(lang) {
       },
     },
     {
-      type: "airport-service-cards",
+      type: "seat-plan",
       style: CARDS_STYLE,
       content: {
         title: copy.cards.title,
-        subtitle: copy.cards.subtitle,
+        description: copy.cards.subtitle,
+        learnMore: copy.cards.learnMore,
         items: copy.cards.items.map((item) => ({
           id: item.id,
           imageUrl: `${MEDIA}/${item.image}`,
           imageAlt: item.imageAlt,
           title: item.title,
           description: item.description,
-          cta: copy.cards.learnMore,
           href: "/help",
-          icon: "ArrowRight",
         })),
         links: [],
       },

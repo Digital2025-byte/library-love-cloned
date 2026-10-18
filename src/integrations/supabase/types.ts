@@ -18,14 +18,17 @@ export type Database = {
         Row: {
           id: string
           label: string
+          shared_style: Json | null
         }
         Insert: {
           id: string
           label: string
+          shared_style?: Json | null
         }
         Update: {
           id?: string
           label?: string
+          shared_style?: Json | null
         }
         Relationships: []
       }

@@ -135,11 +135,43 @@ export const Route = createFileRoute("/api/public/get-page")({
           .slice()
           .sort((a, b) => a.position - b.position);
 
+        // Site-wide chrome (breadcrumbs): load shared_style once and overlay it
+        // so every page trail matches. Content stays on the component row.
+        // Soft-fail when the column is not migrated yet (fan-out still syncs rows).
+        const sharedByType = new Map<string, unknown>();
+        const typesOnPage = [
+          ...new Set(
+            links
+              .map((link) => firstComponent(link)?.type)
+              .filter((t): t is string => Boolean(t)),
+          ),
+        ];
+        if (typesOnPage.includes("breadcrumbs")) {
+          const { data: typeRow, error: typeError } = await supabase
+            .from("component_types")
+            .select("id, shared_style")
+            .eq("id", "breadcrumbs")
+            .maybeSingle();
+          // Missing column (pre-migration) → fall back to per-row style (already
+          // kept in sync by fan-out on save).
+          if (
+            !typeError &&
+            typeRow?.shared_style != null &&
+            typeof typeRow.shared_style === "object"
+          ) {
+            sharedByType.set("breadcrumbs", typeRow.shared_style);
+          }
+        }
+
         const blocks = links.flatMap((link, index) => {
           const component = firstComponent(link);
           if (!component) return [];
           const fullContent = component.content ?? {};
-          const fullStyle = component.style ?? {};
+          const shared = sharedByType.get(component.type);
+          const fullStyle =
+            shared != null && typeof shared === "object"
+              ? shared
+              : (component.style ?? {});
           // With `lang`: only that language's objects (content `{}` when
           // unauthored; style resolved from per-language map or legacy flat).
           // Without: the full per-language maps.

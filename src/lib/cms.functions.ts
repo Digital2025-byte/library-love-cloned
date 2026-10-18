@@ -253,8 +253,67 @@ function mergeContentMaps(
 type ComponentDetailRow = ComponentRow & {
   created_at: string;
   updated_at: string;
-  component_types: { label: string } | { label: string }[] | null;
+  component_types:
+    | { label: string; shared_style?: unknown }
+    | { label: string; shared_style?: unknown }[]
+    | null;
 };
+
+/**
+ * Component types whose style is site-wide: editing style on any page updates
+ * every instance. Content stays per-page. Canonical copy lives on
+ * `component_types.shared_style`; rows are kept in sync for legacy readers.
+ */
+export const SHARED_STYLE_COMPONENT_TYPES = new Set(["breadcrumbs"]);
+
+function usesSharedStyle(type: string | undefined | null): boolean {
+  return Boolean(type && SHARED_STYLE_COMPONENT_TYPES.has(type));
+}
+
+async function readSharedStyle(
+  supabase: CmsWriteClient,
+  type: string,
+): Promise<{ [key: string]: Json } | null> {
+  const { data, error } = await supabase
+    .from("component_types")
+    .select("shared_style")
+    .eq("id", type)
+    .maybeSingle();
+  if (error) {
+    // Column not migrated yet — callers fall back to the component row style.
+    if (/shared_style|PGRST204|schema cache/i.test(error.message || "")) {
+      return null;
+    }
+    throw new Error(error.message);
+  }
+  if (data?.shared_style == null) return null;
+  return asJsonMap(data.shared_style);
+}
+
+async function writeSharedStyleAndFanOut(
+  supabase: CmsWriteClient,
+  type: string,
+  style: { [key: string]: Json },
+): Promise<void> {
+  // Canonical row (migration 20261018160000). Ignore if the column is not
+  // deployed yet — fan-out alone still keeps every instance in sync.
+  const { error: typeError } = await supabase
+    .from("component_types")
+    .update({ shared_style: style })
+    .eq("id", type);
+  if (
+    typeError &&
+    !/shared_style|PGRST204|schema cache/i.test(typeError.message || "")
+  ) {
+    throw new Error(typeError.message);
+  }
+
+  const { error: fanError } = await supabase
+    .from("components")
+    .update({ style: style as never })
+    .eq("type", type);
+  if (fanError) throw new Error(fanError.message);
+}
 
 export function toPublicBlock(
   component: ComponentDetailRow,
@@ -374,8 +433,13 @@ async function publicBlockForLink(
   if (siblingError) throw new Error(siblingError.message);
 
   const order = (siblings ?? []).findIndex((item) => item.id === link.id);
+  const detail = row as ComponentDetailRow;
+  if (usesSharedStyle(detail.type)) {
+    const shared = await readSharedStyle(supabase, detail.type);
+    if (shared) detail.style = shared;
+  }
   return toPublicBlock(
-    row as ComponentDetailRow,
+    detail,
     { id: link.id, position: link.position },
     order < 0 ? 0 : order,
   );
@@ -407,12 +471,30 @@ export async function createComponentForPage(
     position = last ? last.position + 1 : 0;
   }
 
+  // Shared-style types (breadcrumbs): seed from the site-wide style so a new
+  // page matches every other trail without copying chrome by hand.
+  let stylePayload = asJsonMap(data.style);
+  if (usesSharedStyle(data.type)) {
+    const shared = await readSharedStyle(supabase, data.type);
+    if (shared && Object.keys(shared).length > 0) {
+      stylePayload = shared;
+    } else {
+      const { data: peer } = await supabase
+        .from("components")
+        .select("style")
+        .eq("type", data.type)
+        .limit(1)
+        .maybeSingle();
+      if (peer?.style) stylePayload = asJsonMap(peer.style);
+    }
+  }
+
   const { data: row, error } = await supabase
     .from("components")
     .insert({
       type: data.type,
       position,
-      style: asJsonMap(data.style) as never,
+      style: stylePayload as never,
       content: asJsonMap(data.content) as never,
     })
     .select("id")
@@ -494,21 +576,34 @@ export async function updateComponentForPage(
 
   if (data.type) patch.type = data.type;
   if (data.position !== undefined) patch.position = data.position;
+
   if (data.style !== undefined || data.content !== undefined) {
-    // Fetch the current row once so both content and style language-merge
-    // (an edit to one locale must not wipe the other, and style migrates from
-    // a legacy flat object to a per-language map on first per-language edit).
+    // Fetch once so content/style language-merge, and so shared-style types
+    // know their `type` when the client omitted it.
     const { data: current, error: currentError } = await supabase
       .from("components")
-      .select("content, style")
+      .select("type, content, style")
       .eq("id", data.uid)
       .maybeSingle();
     if (currentError) throw new Error(currentError.message);
+    const componentType = data.type || current?.type || undefined;
+
     if (data.content !== undefined) {
       patch.content = mergeContentMaps(current?.content, data.content) as never;
     }
     if (data.style !== undefined) {
-      patch.style = mergeStyleMaps(current?.style, data.style) as never;
+      // Shared-style types: merge into the site-wide style, then fan out to
+      // every instance. Per-page content is still patched on this row only.
+      if (usesSharedStyle(componentType)) {
+        const existingShared =
+          (await readSharedStyle(supabase, componentType!)) ||
+          asJsonMap(current?.style);
+        const nextShared = mergeStyleMaps(existingShared, data.style);
+        await writeSharedStyleAndFanOut(supabase, componentType!, nextShared);
+        // Row style already updated by the fan-out; don't double-patch style.
+      } else {
+        patch.style = mergeStyleMaps(current?.style, data.style) as never;
+      }
     }
   }
 

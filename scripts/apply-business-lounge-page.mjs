@@ -3,7 +3,7 @@
  * URL: /travel-experience/at-the-airport/business-lounge
  *
  * Blocks: breadcrumbs, page-media-hero, page-intro, feature-highlight,
- * lounge-cards, faqs, info-accordion, airport-service-cards.
+ * lounge-cards, faqs, info-accordion, seat-plan.
  *
  *   node scripts/apply-business-lounge-page.mjs
  */
@@ -58,7 +58,7 @@ const COMPONENT_TYPES = [
   { id: "lounge-cards", label: "Lounge Cards" },
   { id: "faqs", label: "FAQs" },
   { id: "info-accordion", label: "Info Accordion" },
-  { id: "airport-service-cards", label: "Airport Service Cards" },
+  { id: "seat-plan", label: "Seat Plan" },
 ];
 
 const BACKLINKS = {
@@ -131,8 +131,6 @@ const FEATURE_STYLE = {
   iconColor: "50",
   ...text("featureTitleColor", "primary-1", "medium"),
   ...text("featureDescriptionColor", "600", "normal"),
-  showLink: true,
-  showLinkIcon: true,
   ...text("buttonText", "primary-1", "semibold"),
   ...BACKLINKS,
 };
@@ -148,8 +146,6 @@ const LOUNGE_STYLE = {
   ...text("titleColor", "700", "semibold"),
   ...text("cardTitleColor", "50", "semibold"),
   ...text("cardDescriptionColor", "50", "normal"),
-  showLink: true,
-  showLinkIcon: true,
   arrowBadgeBg: "primary-1",
   arrowColor: "50",
   ...BACKLINKS,
@@ -188,25 +184,20 @@ const TERMS_STYLE = {
 const CARDS_STYLE = {
   ...LAYOUT,
   showHeader: true,
-  showTitle: true,
-  showSubtitle: false,
+  showDescription: false,
   headerAlign: "center",
   columns: "3",
   cardGap: "default",
   cardRadius: "lg",
-  imageHeight: "medium",
   ...text("titleColor", "700", "semibold"),
-  ...text("subtitleColor", "700", "normal"),
+  ...text("descriptionColor", "700", "normal"),
   cardBg: "background",
-  showCardShadow: true,
   ...text("cardTitleColor", "700", "semibold"),
   ...text("cardDescriptionColor", "700", "normal"),
-  showLink: true,
-  showLinkIcon: true,
-  learnMoreColor: "primary-1",
-  learnMoreFontWeight: "semibold",
-  learnMoreColorHover: "50",
-  learnMoreFontWeightHover: "semibold",
+  buttonText: "primary-1",
+  buttonTextFontWeight: "semibold",
+  buttonTextHover: "50",
+  buttonTextFontWeightHover: "semibold",
   arrowBadgeBg: "primary-1",
   arrowColor: "50",
   ...BACKLINKS,
@@ -540,20 +531,19 @@ function buildBlocks(lang) {
       },
     },
     {
-      type: "airport-service-cards",
+      type: "seat-plan",
       style: CARDS_STYLE,
       content: {
         title: copy.cards.title,
-        subtitle: "",
+        description: "",
+        learnMore: copy.cards?.learnMore || copy.learnMore || "",
         items: copy.cards.items.map((item) => ({
           id: item.id,
           imageUrl: `${MEDIA}/${item.image}`,
           imageAlt: item.imageAlt,
           title: item.title,
           description: item.description,
-          cta: copy.cards.learnMore,
           href: item.href,
-          icon: "ArrowRight",
         })),
         links: [],
       },

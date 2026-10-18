@@ -46,12 +46,17 @@ const text = (colorKey, color, weight) => {
 const BACKLINKS = { showLinks: true, linkColor: "primary-1", linkHoverColor: "primary-2", linkFontWeight: "semibold", linkUnderline: "always", linkItalic: false };
 const LAYOUT = { sectionPadding: "none", showSectionBg: false, sectionBg: "100" };
 const CRUMBS_STYLE = { ...LAYOUT, ...text("crumbColor", "600", "medium"), crumbColorHover: "primary-1", ...text("currentColor", "primary-1", "semibold"), ...text("focusColor", "primary-1", "medium"), separatorColor: "600", crumbUnderline: false, ...BACKLINKS };
-const HERO_STYLE = { layout: "cover", height: "default", titleSize: "default", contentWidth: "default", overlayWidth: "default", objectPosition: "center", sectionBg: "100", showTitle: true, showSubtitle: true, showOverlay: true, showButton: false, ...text("titleColor", "primary-1", "bold"), ...text("subtitleColor", "700", "medium"), ...BACKLINKS };
+const HERO_STYLE = { layout: "cover", height: "default", titleSize: "default", contentWidth: "default", overlayWidth: "default", objectPosition: "center", sectionBg: "100", showTitle: true,
+  showSubtitle: true,
+  showOverlay: true, showButton: false, ...text("titleColor", "primary-1", "bold"), ...text("subtitleColor", "700", "medium"), ...BACKLINKS };
 const INTRO_STYLE = { ...LAYOUT, leadSize: "lg", ...text("leadColor", "700", "semibold"), ...text("bodyColor", "700", "normal"), ...BACKLINKS };
 const CATALOG_STYLE = { ...LAYOUT, columns: "3", showHeader: true, showSubtitle: false, headerAlign: "start", showImageBadge: true, badgeBg: "#f2a131", badgeIconColor: "50", ...text("titleColor", "700", "semibold"), ...text("subtitleColor", "700", "normal"), ...text("cardTitleColor", "700", "medium"), ...text("cardDescriptionColor", "700", "normal"), showLink: false, showLinkIcon: false, ...BACKLINKS };
 const FAQS_STYLE = { ...LAYOUT, showTitle: true, showBrowse: true, itemGap: "default", titleAlign: "left", ...text("titleColor", "700", "semibold"), itemBg: "background", itemBorderColor: "200", itemRadius: "lg", ...text("questionColor", "700", "medium"), ...text("answerColor", "600", "normal"), iconColor: "700", browseBg: "secondary", browseHoverBg: "secondary-800", ...text("browseText", "700", "semibold"), ...BACKLINKS };
 const TERMS_STYLE = { ...LAYOUT, cardBg: "background", cardRadius: "sm", dividerColor: "200", ...text("titleColor", "700", "semibold"), ...text("bodyColor", "600", "normal"), iconColor: "700", ...BACKLINKS };
-const CARDS_STYLE = { ...LAYOUT, showHeader: true, showTitle: true, showSubtitle: false, headerAlign: "start", columns: "2", cardGap: "default", cardRadius: "lg", imageHeight: "xl", ...text("titleColor", "700", "semibold"), cardBg: "background", showCardShadow: true, ...text("cardTitleColor", "700", "semibold"), ...text("cardDescriptionColor", "700", "normal"), showLink: true, showLinkIcon: true, learnMoreColor: "primary-1", learnMoreFontWeight: "semibold", learnMoreColorHover: "50", learnMoreFontWeightHover: "semibold", arrowBadgeBg: "primary-1", arrowColor: "50", ...BACKLINKS };
+const CARDS_STYLE = { ...LAYOUT, showHeader: true, showDescription: false, headerAlign: "start", columns: "2", cardGap: "default", cardRadius: "lg", ...text("titleColor", "700", "semibold"), cardBg: "background", ...text("cardTitleColor", "700", "semibold"), ...text("cardDescriptionColor", "700", "normal"), buttonText: "primary-1",
+  buttonTextFontWeight: "semibold",
+  buttonTextHover: "50",
+  buttonTextFontWeightHover: "semibold", arrowBadgeBg: "primary-1", arrowColor: "50", ...BACKLINKS };
 
 const FAQS_EN = [
   { question: "What is the maximum weight for checked baggage?", answer: "The checked baggage limit depends on your fare and route. Your ticket shows the allowance, and bags over that weight may need an extra fee at check-in." },
@@ -140,10 +145,15 @@ function buildBlocks(lang) {
     { type: "breadcrumbs", style: CRUMBS_STYLE, content: { items: copy.crumbs.map((label, i) => ({ label, href: crumbHrefs[i] })), separator: "/", ariaLabel: copy.aria, links: [] } },
     { type: "page-media-hero", style: HERO_STYLE, content: { title: copy.hero.title, subtitle: copy.hero.subtitle, imageUrl: `${MEDIA}/hero.png`, imageAlt: copy.hero.imageAlt, buttonLabel: "", buttonHref: "", slides: [], links: [] } },
     { type: "page-intro", style: INTRO_STYLE, content: { lead: copy.intro.lead, body: copy.intro.body, imageUrl: `${MEDIA}/cabin.png`, imageAlt: copy.intro.imageAlt, links: [] } },
-    { type: "catalog-cards", style: CATALOG_STYLE, content: { title: copy.catalog.title, subtitle: "", items: copy.catalog.items.map((item) => ({ id: item.id, imageUrl: `${MEDIA}/${item.image}`, imageAlt: item.imageAlt, title: item.title, description: item.description, cta: "", href: "", icon: "", badgeIcon: item.badgeIcon })), links: [] } },
+    { type: "catalog-cards", style: CATALOG_STYLE, content: { title: copy.catalog.title, description: "",
+        learnMore: copy.cards?.learnMore || copy.learnMore || "",
+        items: copy.catalog.items.map((item) => ({ id: item.id, imageUrl: `${MEDIA}/${item.image}`, imageAlt: item.imageAlt, title: item.title, description: item.description, cta: "", href: "", icon: "", badgeIcon: item.badgeIcon })), links: [] } },
     { type: "faqs", style: FAQS_STYLE, content: { title: copy.faqsTitle, browseLabel: copy.browse, browseHref: "/help/faqs", items: copy.faqs, links: [] } },
     { type: "info-accordion", style: TERMS_STYLE, content: { items: copy.terms.map((item) => ({ ...item, defaultOpen: true })), links: [] } },
-    { type: "airport-service-cards", style: CARDS_STYLE, content: { title: copy.cardsTitle, subtitle: "", items: copy.cards.map((item) => ({ id: item.id, imageUrl: `${MEDIA}/${item.image}`, imageAlt: item.imageAlt, title: item.title, description: item.description, cta: copy.learnMore, href: item.href, icon: "ArrowRight" })), links: [] } },
+    { type: "seat-plan", style: CARDS_STYLE, content: { title: copy.cardsTitle, description: "",
+        learnMore: copy.cards?.learnMore || copy.learnMore || "",
+        items: copy.cards.map((item) => ({ id: item.id, imageUrl: `${MEDIA}/${item.image}`, imageAlt: item.imageAlt, title: item.title, description: item.description,
+          href: item.href })), links: [] } },
   ];
 }
 
@@ -193,7 +203,7 @@ for (const row of [
   { id: "catalog-cards", label: "Catalog Cards" },
   { id: "faqs", label: "FAQs" },
   { id: "info-accordion", label: "Info Accordion" },
-  { id: "airport-service-cards", label: "Airport Service Cards" },
+  { id: "seat-plan", label: "Seat Plan" },
 ]) {
   const res = curl("POST", "/rest/v1/component_types", { token, query: "on_conflict=id", prefer: "resolution=merge-duplicates,return=minimal", body: row });
   if (res?.message) { console.error("component_types upsert failed:", restError(res, "unknown error")); process.exit(1); }
