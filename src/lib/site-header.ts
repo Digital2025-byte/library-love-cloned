@@ -22,6 +22,7 @@ export const HEADER_LIMITS = {
   tabsPerMenu: 10,
   linksPerTab: 24,
   cardsPerTab: 12,
+  benefitsPerLogin: 8,
   label: 80,
   description: 200,
   href: 500,
@@ -107,6 +108,22 @@ export const HEADER_STYLE_COLOR_KEYS = [
   "cardMetaColor",
   "tagBg",
   "tagTextColor",
+  "loginPromoFrom",
+  "loginPromoTo",
+  "loginTitleColor",
+  "loginSubtitleColor",
+  "loginBenefitColor",
+  "loginCheckColor",
+  "loginFormBg",
+  "loginInputBorder",
+  "loginInputLabelColor",
+  "loginInputTextColor",
+  "loginSubmitBg",
+  "loginSubmitText",
+  "loginCreateBorder",
+  "loginCreateText",
+  "loginOrColor",
+  "loginDividerColor",
 ] as const;
 
 export const HEADER_STYLE_WEIGHT_KEYS = [
@@ -127,10 +144,33 @@ export type HeaderStyle = {
   [K in (typeof HEADER_STYLE_WEIGHT_KEYS)[number]]: FontWeight;
 };
 
+export type HeaderLoginBenefit = { id: string; text: string };
+
+export type HeaderLogin = {
+  show: boolean;
+  label: string;
+  href: string;
+  panelTitle: string;
+  panelSubtitle: string;
+  benefits: HeaderLoginBenefit[];
+  panelImageUrl: string;
+  brandLogoUrl: string;
+  emailLabel: string;
+  emailPlaceholder: string;
+  passwordLabel: string;
+  passwordPlaceholder: string;
+  submitLabel: string;
+  orLabel: string;
+  createAccountLabel: string;
+  createAccountHref: string;
+  showPasswordLabel: string;
+  hidePasswordLabel: string;
+};
+
 export type HeaderDocument = {
   schemaVersion: typeof HEADER_SCHEMA_VERSION;
   logo: { lightUrl: string; darkUrl: string; alt: string; href: string; faviconUrl: string };
-  login: { show: boolean; label: string; href: string };
+  login: HeaderLogin;
   region: { show: boolean; label: string };
   /** Mobile menu extras (optional — clients fill it from their per-language default). */
   mobile?: HeaderMobile;
@@ -187,6 +227,22 @@ export const DEFAULT_HEADER_STYLE: HeaderStyle = {
   cardMetaColor: "primary-3",
   tagBg: "primary-3",
   tagTextColor: "700",
+  loginPromoFrom: "primary-1",
+  loginPromoTo: "secondary-2",
+  loginTitleColor: "50",
+  loginSubtitleColor: "50",
+  loginBenefitColor: "100",
+  loginCheckColor: "secondary",
+  loginFormBg: "50",
+  loginInputBorder: "300",
+  loginInputLabelColor: "600",
+  loginInputTextColor: "700",
+  loginSubmitBg: "primary-1",
+  loginSubmitText: "50",
+  loginCreateBorder: "primary-1",
+  loginCreateText: "primary-1",
+  loginOrColor: "500",
+  loginDividerColor: "300",
 };
 
 const MEDIA_BASE =
@@ -199,6 +255,32 @@ export const DEFAULT_HEADER_LOGO = {
   href: "/",
   // Browser tab icon (favicon).
   faviconUrl: `${MEDIA_BASE}/tab-icon.webp`,
+};
+
+/** Default log-in dropdown (Figma 41671:57278) — EN copy; clients supply AR. */
+export const DEFAULT_HEADER_LOGIN: HeaderLogin = {
+  show: true,
+  label: "Log in",
+  href: "/",
+  panelTitle: "Welcome to Cham Miles loyalty program",
+  panelSubtitle: "Join now to unlock special travel benefits",
+  benefits: [
+    { id: "offers", text: "Exclusive offers from Fly Cham and discount" },
+    { id: "preferences", text: "Book flights faster with saved preferences" },
+    { id: "checkin", text: "Easy online check-in" },
+  ],
+  panelImageUrl: `${MEDIA_BASE}/login-panel-bg.webp`,
+  brandLogoUrl: `${MEDIA_BASE}/login-cham-miles-logo.webp`,
+  emailLabel: "Email",
+  emailPlaceholder: "",
+  passwordLabel: "Password",
+  passwordPlaceholder: "",
+  submitLabel: "Log in",
+  orLabel: "OR",
+  createAccountLabel: "Create account",
+  createAccountHref: "/cham-miles",
+  showPasswordLabel: "Show password",
+  hidePasswordLabel: "Hide password",
 };
 
 // ---------------------------------------------------------------------------
@@ -242,7 +324,23 @@ type Field =
   | "name"
   | "location"
   | "code"
-  | "tag";
+  | "tag"
+  | "panelTitle"
+  | "panelSubtitle"
+  | "benefits"
+  | "text"
+  | "panelImageUrl"
+  | "brandLogoUrl"
+  | "emailLabel"
+  | "emailPlaceholder"
+  | "passwordLabel"
+  | "passwordPlaceholder"
+  | "submitLabel"
+  | "orLabel"
+  | "createAccountLabel"
+  | "createAccountHref"
+  | "showPasswordLabel"
+  | "hidePasswordLabel";
 type Obj = { [K in Field]?: unknown } & Record<string, unknown>;
 
 function isObj(value: unknown): value is Obj {
@@ -317,6 +415,39 @@ function normalizeMobileLink(raw: unknown, index: number): unknown {
   return { id: or(raw.id, `mobile-link-${index + 1}`), label: or(raw.label, ""), href: or(raw.href, "") };
 }
 
+function normalizeLoginBenefit(raw: unknown, index: number): unknown {
+  if (!isObj(raw)) return raw;
+  return { id: or(raw.id, `benefit-${index + 1}`), text: or(raw.text, "") };
+}
+
+function normalizeLogin(raw: unknown): unknown {
+  if (!isObj(raw)) return raw;
+  const benefits =
+    raw.benefits === undefined || raw.benefits === null
+      ? DEFAULT_HEADER_LOGIN.benefits.map((b) => ({ ...b }))
+      : normalizeList(raw.benefits, normalizeLoginBenefit);
+  return {
+    show: or(raw.show, DEFAULT_HEADER_LOGIN.show),
+    label: or(raw.label, DEFAULT_HEADER_LOGIN.label),
+    href: or(raw.href, DEFAULT_HEADER_LOGIN.href),
+    panelTitle: or(raw.panelTitle, DEFAULT_HEADER_LOGIN.panelTitle),
+    panelSubtitle: or(raw.panelSubtitle, DEFAULT_HEADER_LOGIN.panelSubtitle),
+    benefits,
+    panelImageUrl: or(raw.panelImageUrl, DEFAULT_HEADER_LOGIN.panelImageUrl),
+    brandLogoUrl: or(raw.brandLogoUrl, DEFAULT_HEADER_LOGIN.brandLogoUrl),
+    emailLabel: or(raw.emailLabel, DEFAULT_HEADER_LOGIN.emailLabel),
+    emailPlaceholder: or(raw.emailPlaceholder, DEFAULT_HEADER_LOGIN.emailPlaceholder),
+    passwordLabel: or(raw.passwordLabel, DEFAULT_HEADER_LOGIN.passwordLabel),
+    passwordPlaceholder: or(raw.passwordPlaceholder, DEFAULT_HEADER_LOGIN.passwordPlaceholder),
+    submitLabel: or(raw.submitLabel, DEFAULT_HEADER_LOGIN.submitLabel),
+    orLabel: or(raw.orLabel, DEFAULT_HEADER_LOGIN.orLabel),
+    createAccountLabel: or(raw.createAccountLabel, DEFAULT_HEADER_LOGIN.createAccountLabel),
+    createAccountHref: or(raw.createAccountHref, DEFAULT_HEADER_LOGIN.createAccountHref),
+    showPasswordLabel: or(raw.showPasswordLabel, DEFAULT_HEADER_LOGIN.showPasswordLabel),
+    hidePasswordLabel: or(raw.hidePasswordLabel, DEFAULT_HEADER_LOGIN.hidePasswordLabel),
+  };
+}
+
 /** Absent stays absent (clients use their per-language default). */
 function normalizeMobile(raw: unknown): unknown {
   if (raw === undefined || raw === null) return undefined;
@@ -347,7 +478,7 @@ function normalizeStyle(raw: unknown): unknown {
 export function normalizeHeaderDocument(input: unknown): unknown {
   if (!isObj(input)) return input;
   const logo = isObj(input.logo) ? input.logo : (input.logo ?? {});
-  const login = isObj(input.login) ? input.login : (input.login ?? {});
+  const login = normalizeLogin(isObj(input.login) ? input.login : (input.login ?? {}));
   const region = isObj(input.region) ? input.region : (input.region ?? {});
   const mobile = normalizeMobile(input.mobile);
   return {
@@ -361,13 +492,7 @@ export function normalizeHeaderDocument(input: unknown): unknown {
           faviconUrl: or(logo.faviconUrl, DEFAULT_HEADER_LOGO.faviconUrl),
         }
       : logo,
-    login: isObj(login)
-      ? {
-          show: or(login.show, true),
-          label: or(login.label, ""),
-          href: or(login.href, "/"),
-        }
-      : login,
+    login,
     region: isObj(region) ? { show: or(region.show, true), label: or(region.label, "") } : region,
     ...(mobile === undefined ? {} : { mobile }),
     menus: normalizeList(input.menus, normalizeMenu),
@@ -582,6 +707,29 @@ export function parseHeaderDocument(input: unknown): ParseHeaderResult {
     c.bool(doc.login.show, "login.show");
     c.str(doc.login.label, "login.label", HEADER_LIMITS.label);
     c.href(doc.login.href, "login.href");
+    c.str(doc.login.panelTitle, "login.panelTitle", HEADER_LIMITS.description);
+    c.str(doc.login.panelSubtitle, "login.panelSubtitle", HEADER_LIMITS.description);
+    c.asset(doc.login.panelImageUrl, "login.panelImageUrl");
+    c.asset(doc.login.brandLogoUrl, "login.brandLogoUrl");
+    c.str(doc.login.emailLabel, "login.emailLabel", HEADER_LIMITS.label);
+    c.str(doc.login.emailPlaceholder, "login.emailPlaceholder", HEADER_LIMITS.label);
+    c.str(doc.login.passwordLabel, "login.passwordLabel", HEADER_LIMITS.label);
+    c.str(doc.login.passwordPlaceholder, "login.passwordPlaceholder", HEADER_LIMITS.label);
+    c.str(doc.login.submitLabel, "login.submitLabel", HEADER_LIMITS.label);
+    c.str(doc.login.orLabel, "login.orLabel", HEADER_LIMITS.label);
+    c.str(doc.login.createAccountLabel, "login.createAccountLabel", HEADER_LIMITS.label);
+    c.href(doc.login.createAccountHref, "login.createAccountHref");
+    c.str(doc.login.showPasswordLabel, "login.showPasswordLabel", HEADER_LIMITS.label);
+    c.str(doc.login.hidePasswordLabel, "login.hidePasswordLabel", HEADER_LIMITS.label);
+    if (c.array(doc.login.benefits, "login.benefits", HEADER_LIMITS.benefitsPerLogin)) {
+      const ids = new Set<string>();
+      doc.login.benefits.forEach((b, i) => {
+        const p = `login.benefits[${i}]`;
+        if (!c.obj(b, p)) return;
+        c.id(b.id, `${p}.id`, ids);
+        c.str(b.text, `${p}.text`, HEADER_LIMITS.description);
+      });
+    }
   }
   if (c.obj(doc.region, "region")) {
     c.bool(doc.region.show, "region.show");
