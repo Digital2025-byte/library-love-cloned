@@ -42,7 +42,8 @@ try {
 const MAX_BYTES = 400 * 1024;
 const TARGET = MAX_BYTES - 4 * 1024; // small safety margin
 const MIN_QUALITY = 50; // below this we stop and report instead of wrecking the image
-const BUCKET = "cms-media";
+// --bucket=<id> targets another Storage bucket (default cms-media).
+const BUCKET = process.argv.find((a) => a.startsWith("--bucket="))?.slice(9) || "cms-media";
 
 const DRY_RUN = process.argv.includes("--dry-run");
 const ONLY = process.argv.find((a) => a.startsWith("--only="))?.slice(7) || "";

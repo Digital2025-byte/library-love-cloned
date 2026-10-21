@@ -43,7 +43,7 @@ const password = "FlyChamAdmin!2026";
 const PAGE_SLUG = "seat-selection";
 const TYPE_ID = "seat-journey";
 const IMG =
-  "https://xbqrfakpcisqunyugrqt.supabase.co/storage/v1/object/public/cms-media/seat-selection/journey.jpg";
+  "https://xbqrfakpcisqunyugrqt.supabase.co/storage/v1/object/public/cms-media/seat-selection/journey.webp";
 
 const TEXT = {
   en: {

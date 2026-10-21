@@ -53,7 +53,8 @@ const key =
 const email = "admin@flycham.local";
 const password = "FlyChamAdmin!2026";
 
-const BUCKET = "cms-media";
+// --bucket=<id> targets another Storage bucket (default cms-media).
+const BUCKET = process.argv.find((a) => a.startsWith("--bucket="))?.slice(9) || "cms-media";
 const TARGET = 396 * 1024;
 const MAX_DIM = 2560;
 const DRY_RUN = process.argv.includes("--dry-run");
@@ -247,3 +248,23 @@ for (const u of updates) {
     throw new Error(`PATCH ${u.table} ${u.id} failed: ${p.status} ${JSON.stringify(j).slice(0, 300)}`);
 }
 console.log(`DB updated. Old PNG/JPEG objects left in place. Backups: ${backupRoot}`);
+
+// Tree libraries (e.g. destination-images) keep original display names in
+// `_names.json` keyed by stored path — carry each renamed file's name over.
+{
+  const r = await fetch(`${publicUrl("_names.json")}?v=${Date.now()}`);
+  if (r.ok && converted.length) {
+    const names = await r.json();
+    writeFileSync(join(backupRoot, "_names.before.json"), JSON.stringify(names, null, 1));
+    for (const { path, next } of converted) {
+      names[next] = names[path] ?? path.split("/").pop().replace(/\.[^.]+$/, "");
+    }
+    const up = await fetch(`${url}/storage/v1/object/${BUCKET}/_names.json`, {
+      method: "POST",
+      headers: headers({ "Content-Type": "application/json", "cache-control": "60", "x-upsert": "true" }),
+      body: JSON.stringify(names, null, 1),
+    });
+    if (!up.ok) throw new Error(`_names.json upload: ${up.status} ${await up.text()}`);
+    console.log(`_names.json updated (${converted.length} renamed file(s)).`);
+  }
+}

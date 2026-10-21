@@ -27,7 +27,26 @@ function fetchErrorMessage(error: unknown): string {
   return error.message;
 }
 
-/** Publishable-key client. Forwards a caller bearer token so an admin session sees drafts. */
+/** True when `Authorization` is a Bearer JWT (three dot-separated parts). */
+function jwtBearer(authorization: string | null): string | null {
+  if (!authorization?.startsWith("Bearer ")) return null;
+  const token = authorization.slice("Bearer ".length).trim();
+  if (!token || token.split(".").length !== 3) return null;
+  return `Bearer ${token}`;
+}
+
+/** Supabase rejected the caller's JWT (garbage / expired / wrong project). */
+function isJwtAuthFailure(error: { message?: string } | null | undefined): boolean {
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("jwt") ||
+    message.includes("unauthorized") ||
+    message.includes("session") ||
+    message.includes("invalid claim")
+  );
+}
+
+/** Publishable-key client. Forwards a caller JWT so an admin session sees drafts. */
 export function createCmsClient(request: Request) {
   ensureWindowsSystemCa();
   const url =
@@ -44,7 +63,9 @@ export function createCmsClient(request: Request) {
       ].join(", ")}.`,
     );
   }
-  const bearer = request.headers.get("authorization");
+  // Only forward a well-formed JWT. Opaque/garbage bearers make PostgREST
+  // return "Expected 3 parts in JWT" and turn a public list into a 500.
+  const bearer = jwtBearer(request.headers.get("authorization"));
 
   return createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
@@ -89,16 +110,28 @@ export const Route = createFileRoute("/api/public/get-pages")({
         const lang = normalizeLang(url.searchParams.get("lang"));
 
         const supabase = createCmsClient(request);
+        const selectCols =
+          "id, slug, label, description, status, created_at, updated_at, page_components(id, lang)";
         let query = supabase
           .from("pages")
-          .select(
-            "id, slug, label, description, status, created_at, updated_at, page_components(id, lang)"
-          )
+          .select(selectCols)
           .order("slug", { ascending: true });
 
         if (status) query = query.eq("status", status);
 
-        const { data, error } = await query;
+        let { data, error } = await query;
+
+        // Expired/invalid admin JWT → fall back to anon RLS (published pages)
+        // instead of failing the whole pages list.
+        if (error && isJwtAuthFailure(error)) {
+          const anon = createCmsClient(new Request(request.url));
+          let anonQuery = anon
+            .from("pages")
+            .select(selectCols)
+            .order("slug", { ascending: true });
+          if (status) anonQuery = anonQuery.eq("status", status);
+          ({ data, error } = await anonQuery);
+        }
 
         if (error)
           return json(
