@@ -1,8 +1,9 @@
 /**
  * Create empty published CMS pages (no blocks) in English and Arabic.
  * Blocks are stored per language, so a page with none is empty in both.
+ * Existing pages are left untouched (never edited, blocks never cleared).
  *
- *   node scripts/apply-empty-pages.mjs
+ *   node scripts/apply-empty-pages.mjs [--dry-run]
  */
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -31,6 +32,7 @@ const key =
 
 const email = "admin@flycham.local";
 const password = "FlyChamAdmin!2026";
+const dryRun = process.argv.includes("--dry-run");
 
 const PAGES = [
   {
@@ -52,6 +54,18 @@ const PAGES = [
     slug: "accessibility-statement",
     label: "Accessibility statement",
     description: "Empty page",
+  },
+  // Destination pages under /our-destinations (same parent marker the admin's
+  // "Add new page" dialog writes). Jeddah was created in the admin.
+  {
+    slug: "flights-to-jeddah",
+    label: "Flights to Jeddah",
+    description: "[[parent:our-destinations]]",
+  },
+  {
+    slug: "flights-to-medina",
+    label: "Flights to Medina",
+    description: "[[parent:our-destinations]]",
   },
 ];
 
@@ -121,6 +135,10 @@ for (const page of PAGES) {
   }
   if (existing[0]?.id) {
     console.log("page exists:", page.slug, existing[0].id);
+    continue;
+  }
+  if (dryRun) {
+    console.log("[dry-run] would create:", page.slug, JSON.stringify(page.description));
     continue;
   }
   const inserted = curl("POST", "/rest/v1/pages", {

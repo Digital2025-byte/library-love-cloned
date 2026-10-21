@@ -20,6 +20,8 @@ import { Route as ApiPublicUpdateComponentRouteImport } from './routes/api/publi
 import { Route as ApiPublicUpdateFooterRouteImport } from './routes/api/public/update-footer'
 import { Route as ApiPublicUpdateHeaderRouteImport } from './routes/api/public/update-header'
 import { Route as ApiPublicUpdatePageStatusRouteImport } from './routes/api/public/update-page-status'
+import { Route as ApiPublicBaggagePricesIndexRouteImport } from './routes/api/public/baggage-prices/index'
+import { Route as ApiPublicBaggagePricesQuoteRouteImport } from './routes/api/public/baggage-prices/quote'
 import { Route as ApiPublicDestinationCategoriesIndexRouteImport } from './routes/api/public/destination-categories/index'
 import { Route as ApiPublicDestinationCategoriesIdRouteImport } from './routes/api/public/destination-categories/$id'
 import { Route as ApiPublicOffersIndexRouteImport } from './routes/api/public/offers/index'
@@ -85,6 +87,18 @@ const ApiPublicUpdatePageStatusRoute =
     path: '/api/public/update-page-status',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicBaggagePricesIndexRoute =
+  ApiPublicBaggagePricesIndexRouteImport.update({
+    id: '/api/public/baggage-prices/',
+    path: '/api/public/baggage-prices/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicBaggagePricesQuoteRoute =
+  ApiPublicBaggagePricesQuoteRouteImport.update({
+    id: '/api/public/baggage-prices/quote',
+    path: '/api/public/baggage-prices/quote',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicDestinationCategoriesIndexRoute =
   ApiPublicDestinationCategoriesIndexRouteImport.update({
     id: '/api/public/destination-categories/',
@@ -125,8 +139,10 @@ export interface FileRoutesByFullPath {
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
   '/api/public/update-page-status': typeof ApiPublicUpdatePageStatusRoute
+  '/api/public/baggage-prices/quote': typeof ApiPublicBaggagePricesQuoteRoute
   '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/baggage-prices/': typeof ApiPublicBaggagePricesIndexRoute
   '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
   '/api/public/offers/': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
@@ -143,8 +159,10 @@ export interface FileRoutesByTo {
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
   '/api/public/update-page-status': typeof ApiPublicUpdatePageStatusRoute
+  '/api/public/baggage-prices/quote': typeof ApiPublicBaggagePricesQuoteRoute
   '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/baggage-prices': typeof ApiPublicBaggagePricesIndexRoute
   '/api/public/destination-categories': typeof ApiPublicDestinationCategoriesIndexRoute
   '/api/public/offers': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
@@ -162,8 +180,10 @@ export interface FileRoutesById {
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
   '/api/public/update-page-status': typeof ApiPublicUpdatePageStatusRoute
+  '/api/public/baggage-prices/quote': typeof ApiPublicBaggagePricesQuoteRoute
   '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/baggage-prices/': typeof ApiPublicBaggagePricesIndexRoute
   '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
   '/api/public/offers/': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
@@ -182,8 +202,10 @@ export interface FileRouteTypes {
     | '/api/public/update-footer'
     | '/api/public/update-header'
     | '/api/public/update-page-status'
+    | '/api/public/baggage-prices/quote'
     | '/api/public/destination-categories/$id'
     | '/api/public/offers/$id'
+    | '/api/public/baggage-prices/'
     | '/api/public/destination-categories/'
     | '/api/public/offers/'
     | '/api/public/offers/$id/status'
@@ -200,8 +222,10 @@ export interface FileRouteTypes {
     | '/api/public/update-footer'
     | '/api/public/update-header'
     | '/api/public/update-page-status'
+    | '/api/public/baggage-prices/quote'
     | '/api/public/destination-categories/$id'
     | '/api/public/offers/$id'
+    | '/api/public/baggage-prices'
     | '/api/public/destination-categories'
     | '/api/public/offers'
     | '/api/public/offers/$id/status'
@@ -218,8 +242,10 @@ export interface FileRouteTypes {
     | '/api/public/update-footer'
     | '/api/public/update-header'
     | '/api/public/update-page-status'
+    | '/api/public/baggage-prices/quote'
     | '/api/public/destination-categories/$id'
     | '/api/public/offers/$id'
+    | '/api/public/baggage-prices/'
     | '/api/public/destination-categories/'
     | '/api/public/offers/'
     | '/api/public/offers/$id/status'
@@ -237,8 +263,10 @@ export interface RootRouteChildren {
   ApiPublicUpdateFooterRoute: typeof ApiPublicUpdateFooterRoute
   ApiPublicUpdateHeaderRoute: typeof ApiPublicUpdateHeaderRoute
   ApiPublicUpdatePageStatusRoute: typeof ApiPublicUpdatePageStatusRoute
+  ApiPublicBaggagePricesQuoteRoute: typeof ApiPublicBaggagePricesQuoteRoute
   ApiPublicDestinationCategoriesIdRoute: typeof ApiPublicDestinationCategoriesIdRoute
   ApiPublicOffersIdRoute: typeof ApiPublicOffersIdRouteWithChildren
+  ApiPublicBaggagePricesIndexRoute: typeof ApiPublicBaggagePricesIndexRoute
   ApiPublicDestinationCategoriesIndexRoute: typeof ApiPublicDestinationCategoriesIndexRoute
   ApiPublicOffersIndexRoute: typeof ApiPublicOffersIndexRoute
 }
@@ -322,6 +350,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicUpdatePageStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/baggage-prices/': {
+      id: '/api/public/baggage-prices/'
+      path: '/api/public/baggage-prices'
+      fullPath: '/api/public/baggage-prices/'
+      preLoaderRoute: typeof ApiPublicBaggagePricesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/baggage-prices/quote': {
+      id: '/api/public/baggage-prices/quote'
+      path: '/api/public/baggage-prices/quote'
+      fullPath: '/api/public/baggage-prices/quote'
+      preLoaderRoute: typeof ApiPublicBaggagePricesQuoteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/destination-categories/': {
       id: '/api/public/destination-categories/'
       path: '/api/public/destination-categories'
@@ -383,8 +425,10 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicUpdateFooterRoute: ApiPublicUpdateFooterRoute,
   ApiPublicUpdateHeaderRoute: ApiPublicUpdateHeaderRoute,
   ApiPublicUpdatePageStatusRoute: ApiPublicUpdatePageStatusRoute,
+  ApiPublicBaggagePricesQuoteRoute: ApiPublicBaggagePricesQuoteRoute,
   ApiPublicDestinationCategoriesIdRoute: ApiPublicDestinationCategoriesIdRoute,
   ApiPublicOffersIdRoute: ApiPublicOffersIdRouteWithChildren,
+  ApiPublicBaggagePricesIndexRoute: ApiPublicBaggagePricesIndexRoute,
   ApiPublicDestinationCategoriesIndexRoute:
     ApiPublicDestinationCategoriesIndexRoute,
   ApiPublicOffersIndexRoute: ApiPublicOffersIndexRoute,
