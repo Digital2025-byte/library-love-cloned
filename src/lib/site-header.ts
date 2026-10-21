@@ -148,6 +148,8 @@ export type HeaderLoginBenefit = { id: string; text: string };
 
 export type HeaderLogin = {
   show: boolean;
+  /** Desktop log-in dropdown: left blue welcome / promo column. */
+  showWelcomePanel: boolean;
   label: string;
   href: string;
   panelTitle: string;
@@ -260,6 +262,7 @@ export const DEFAULT_HEADER_LOGO = {
 /** Default log-in dropdown (Figma 41671:57278) — EN copy; clients supply AR. */
 export const DEFAULT_HEADER_LOGIN: HeaderLogin = {
   show: true,
+  showWelcomePanel: true,
   label: "Log in",
   href: "/",
   panelTitle: "Welcome to Cham Miles loyalty program",
@@ -325,6 +328,7 @@ type Field =
   | "location"
   | "code"
   | "tag"
+  | "showWelcomePanel"
   | "panelTitle"
   | "panelSubtitle"
   | "benefits"
@@ -415,6 +419,9 @@ function normalizeMobileLink(raw: unknown, index: number): unknown {
   return { id: or(raw.id, `mobile-link-${index + 1}`), label: or(raw.label, ""), href: or(raw.href, "") };
 }
 
+/** Reserved benefit id — durable hide-welcome flag for older clients/CMS builds. */
+const HIDE_WELCOME_PANEL_ID = "_hideWelcomePanel";
+
 function normalizeLoginBenefit(raw: unknown, index: number): unknown {
   if (!isObj(raw)) return raw;
   return { id: or(raw.id, `benefit-${index + 1}`), text: or(raw.text, "") };
@@ -422,12 +429,26 @@ function normalizeLoginBenefit(raw: unknown, index: number): unknown {
 
 function normalizeLogin(raw: unknown): unknown {
   if (!isObj(raw)) return raw;
-  const benefits =
+  const rawBenefits =
     raw.benefits === undefined || raw.benefits === null
       ? DEFAULT_HEADER_LOGIN.benefits.map((b) => ({ ...b }))
       : normalizeList(raw.benefits, normalizeLoginBenefit);
+  const benefitList = Array.isArray(rawBenefits) ? rawBenefits : [];
+  const hideByBenefit = benefitList.some(
+    (item) => isObj(item) && item.id === HIDE_WELCOME_PANEL_ID,
+  );
+  const showWelcomePanel = hideByBenefit
+    ? false
+    : Boolean(or(raw.showWelcomePanel, DEFAULT_HEADER_LOGIN.showWelcomePanel));
+  const visible = benefitList.filter(
+    (item) => !(isObj(item) && item.id === HIDE_WELCOME_PANEL_ID),
+  );
+  const benefits = showWelcomePanel
+    ? visible
+    : [...visible, { id: HIDE_WELCOME_PANEL_ID, text: "\u200b" }];
   return {
     show: or(raw.show, DEFAULT_HEADER_LOGIN.show),
+    showWelcomePanel,
     label: or(raw.label, DEFAULT_HEADER_LOGIN.label),
     href: or(raw.href, DEFAULT_HEADER_LOGIN.href),
     panelTitle: or(raw.panelTitle, DEFAULT_HEADER_LOGIN.panelTitle),
@@ -705,6 +726,7 @@ export function parseHeaderDocument(input: unknown): ParseHeaderResult {
   }
   if (c.obj(doc.login, "login")) {
     c.bool(doc.login.show, "login.show");
+    c.bool(doc.login.showWelcomePanel, "login.showWelcomePanel");
     c.str(doc.login.label, "login.label", HEADER_LIMITS.label);
     c.href(doc.login.href, "login.href");
     c.str(doc.login.panelTitle, "login.panelTitle", HEADER_LIMITS.description);
