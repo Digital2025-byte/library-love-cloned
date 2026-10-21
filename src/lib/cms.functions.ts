@@ -599,7 +599,7 @@ export async function updateComponentForPage(
           (await readSharedStyle(supabase, componentType!)) ||
           asJsonMap(current?.style);
         const nextShared = mergeStyleMaps(existingShared, data.style);
-        await writeSharedStyleAndFanOut(supabase, componentType!, nextShared);
+        await writeSharedStyleAndFanOut(supabase, componentType!, nextShared as { [key: string]: Json });
         // Row style already updated by the fan-out; don't double-patch style.
       } else {
         patch.style = mergeStyleMaps(current?.style, data.style) as never;

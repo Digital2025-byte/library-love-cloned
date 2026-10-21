@@ -72,11 +72,11 @@ export function parseCategoryInput(
   const body = input && typeof input === "object" && !Array.isArray(input) ? (input as Record<string, unknown>) : null;
   if (!body) return { ok: false, issues: [{ path: "body", message: "Expected an object" }] };
 
-  const slug = str(body.slug).toLowerCase();
-  const labelEn = str(body.labelEn);
-  const labelAr = str(body.labelAr);
-  const icon = str(body.icon) || "landmarks";
-  const position = body.position;
+  const slug = str(body["slug"]).toLowerCase();
+  const labelEn = str(body["labelEn"]);
+  const labelAr = str(body["labelAr"]);
+  const icon = str(body["icon"]) || "landmarks";
+  const position = body["position"];
 
   if (!SLUG.test(slug) || slug.length < 2 || slug.length > 40) {
     issues.push({ path: "slug", message: "Use 2–40 lowercase letters, numbers and single hyphens" });

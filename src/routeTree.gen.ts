@@ -15,15 +15,16 @@ import { Route as ApiPublicGetFooterRouteImport } from './routes/api/public/get-
 import { Route as ApiPublicGetHeaderRouteImport } from './routes/api/public/get-header'
 import { Route as ApiPublicGetPageRouteImport } from './routes/api/public/get-page'
 import { Route as ApiPublicGetPagesRouteImport } from './routes/api/public/get-pages'
+import { Route as ApiPublicPosListRouteImport } from './routes/api/public/pos-list'
 import { Route as ApiPublicUpdateComponentRouteImport } from './routes/api/public/update-component'
 import { Route as ApiPublicUpdateFooterRouteImport } from './routes/api/public/update-footer'
 import { Route as ApiPublicUpdateHeaderRouteImport } from './routes/api/public/update-header'
 import { Route as ApiPublicUpdatePageStatusRouteImport } from './routes/api/public/update-page-status'
+import { Route as ApiPublicDestinationCategoriesIndexRouteImport } from './routes/api/public/destination-categories/index'
+import { Route as ApiPublicDestinationCategoriesIdRouteImport } from './routes/api/public/destination-categories/$id'
 import { Route as ApiPublicOffersIndexRouteImport } from './routes/api/public/offers/index'
 import { Route as ApiPublicOffersIdRouteImport } from './routes/api/public/offers/$id'
 import { Route as ApiPublicOffersIdStatusRouteImport } from './routes/api/public/offers/$id.status'
-import { Route as ApiPublicDestinationCategoriesIndexRouteImport } from './routes/api/public/destination-categories/index'
-import { Route as ApiPublicDestinationCategoriesIdRouteImport } from './routes/api/public/destination-categories/$id'
 
 const ApiPublicCreateComponentRoute =
   ApiPublicCreateComponentRouteImport.update({
@@ -57,6 +58,11 @@ const ApiPublicGetPagesRoute = ApiPublicGetPagesRouteImport.update({
   path: '/api/public/get-pages',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicPosListRoute = ApiPublicPosListRouteImport.update({
+  id: '/api/public/pos-list',
+  path: '/api/public/pos-list',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicUpdateComponentRoute =
   ApiPublicUpdateComponentRouteImport.update({
     id: '/api/public/update-component',
@@ -79,6 +85,18 @@ const ApiPublicUpdatePageStatusRoute =
     path: '/api/public/update-page-status',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicDestinationCategoriesIndexRoute =
+  ApiPublicDestinationCategoriesIndexRouteImport.update({
+    id: '/api/public/destination-categories/',
+    path: '/api/public/destination-categories/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicDestinationCategoriesIdRoute =
+  ApiPublicDestinationCategoriesIdRouteImport.update({
+    id: '/api/public/destination-categories/$id',
+    path: '/api/public/destination-categories/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicOffersIndexRoute = ApiPublicOffersIndexRouteImport.update({
   id: '/api/public/offers/',
   path: '/api/public/offers/',
@@ -94,18 +112,6 @@ const ApiPublicOffersIdStatusRoute = ApiPublicOffersIdStatusRouteImport.update({
   path: '/status',
   getParentRoute: () => ApiPublicOffersIdRoute,
 } as any)
-const ApiPublicDestinationCategoriesIndexRoute =
-  ApiPublicDestinationCategoriesIndexRouteImport.update({
-    id: '/api/public/destination-categories/',
-    path: '/api/public/destination-categories/',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicDestinationCategoriesIdRoute =
-  ApiPublicDestinationCategoriesIdRouteImport.update({
-    id: '/api/public/destination-categories/$id',
-    path: '/api/public/destination-categories/$id',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
@@ -114,15 +120,16 @@ export interface FileRoutesByFullPath {
   '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
+  '/api/public/pos-list': typeof ApiPublicPosListRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
   '/api/public/update-page-status': typeof ApiPublicUpdatePageStatusRoute
+  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
   '/api/public/offers/': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
-  '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
-  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
 }
 export interface FileRoutesByTo {
   '/api/public/create-component': typeof ApiPublicCreateComponentRoute
@@ -131,15 +138,16 @@ export interface FileRoutesByTo {
   '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
+  '/api/public/pos-list': typeof ApiPublicPosListRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
   '/api/public/update-page-status': typeof ApiPublicUpdatePageStatusRoute
+  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/destination-categories': typeof ApiPublicDestinationCategoriesIndexRoute
   '/api/public/offers': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
-  '/api/public/destination-categories': typeof ApiPublicDestinationCategoriesIndexRoute
-  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -149,15 +157,16 @@ export interface FileRoutesById {
   '/api/public/get-header': typeof ApiPublicGetHeaderRoute
   '/api/public/get-page': typeof ApiPublicGetPageRoute
   '/api/public/get-pages': typeof ApiPublicGetPagesRoute
+  '/api/public/pos-list': typeof ApiPublicPosListRoute
   '/api/public/update-component': typeof ApiPublicUpdateComponentRoute
   '/api/public/update-footer': typeof ApiPublicUpdateFooterRoute
   '/api/public/update-header': typeof ApiPublicUpdateHeaderRoute
   '/api/public/update-page-status': typeof ApiPublicUpdatePageStatusRoute
+  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
   '/api/public/offers/$id': typeof ApiPublicOffersIdRouteWithChildren
+  '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
   '/api/public/offers/': typeof ApiPublicOffersIndexRoute
   '/api/public/offers/$id/status': typeof ApiPublicOffersIdStatusRoute
-  '/api/public/destination-categories/': typeof ApiPublicDestinationCategoriesIndexRoute
-  '/api/public/destination-categories/$id': typeof ApiPublicDestinationCategoriesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -168,15 +177,16 @@ export interface FileRouteTypes {
     | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
+    | '/api/public/pos-list'
     | '/api/public/update-component'
     | '/api/public/update-footer'
     | '/api/public/update-header'
     | '/api/public/update-page-status'
+    | '/api/public/destination-categories/$id'
     | '/api/public/offers/$id'
+    | '/api/public/destination-categories/'
     | '/api/public/offers/'
     | '/api/public/offers/$id/status'
-    | '/api/public/destination-categories/'
-    | '/api/public/destination-categories/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/api/public/create-component'
@@ -185,15 +195,16 @@ export interface FileRouteTypes {
     | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
+    | '/api/public/pos-list'
     | '/api/public/update-component'
     | '/api/public/update-footer'
     | '/api/public/update-header'
     | '/api/public/update-page-status'
+    | '/api/public/destination-categories/$id'
     | '/api/public/offers/$id'
+    | '/api/public/destination-categories'
     | '/api/public/offers'
     | '/api/public/offers/$id/status'
-    | '/api/public/destination-categories'
-    | '/api/public/destination-categories/$id'
   id:
     | '__root__'
     | '/api/public/create-component'
@@ -202,15 +213,16 @@ export interface FileRouteTypes {
     | '/api/public/get-header'
     | '/api/public/get-page'
     | '/api/public/get-pages'
+    | '/api/public/pos-list'
     | '/api/public/update-component'
     | '/api/public/update-footer'
     | '/api/public/update-header'
     | '/api/public/update-page-status'
+    | '/api/public/destination-categories/$id'
     | '/api/public/offers/$id'
+    | '/api/public/destination-categories/'
     | '/api/public/offers/'
     | '/api/public/offers/$id/status'
-    | '/api/public/destination-categories/'
-    | '/api/public/destination-categories/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -220,14 +232,15 @@ export interface RootRouteChildren {
   ApiPublicGetHeaderRoute: typeof ApiPublicGetHeaderRoute
   ApiPublicGetPageRoute: typeof ApiPublicGetPageRoute
   ApiPublicGetPagesRoute: typeof ApiPublicGetPagesRoute
+  ApiPublicPosListRoute: typeof ApiPublicPosListRoute
   ApiPublicUpdateComponentRoute: typeof ApiPublicUpdateComponentRoute
   ApiPublicUpdateFooterRoute: typeof ApiPublicUpdateFooterRoute
   ApiPublicUpdateHeaderRoute: typeof ApiPublicUpdateHeaderRoute
   ApiPublicUpdatePageStatusRoute: typeof ApiPublicUpdatePageStatusRoute
-  ApiPublicOffersIdRoute: typeof ApiPublicOffersIdRouteWithChildren
-  ApiPublicOffersIndexRoute: typeof ApiPublicOffersIndexRoute
-  ApiPublicDestinationCategoriesIndexRoute: typeof ApiPublicDestinationCategoriesIndexRoute
   ApiPublicDestinationCategoriesIdRoute: typeof ApiPublicDestinationCategoriesIdRoute
+  ApiPublicOffersIdRoute: typeof ApiPublicOffersIdRouteWithChildren
+  ApiPublicDestinationCategoriesIndexRoute: typeof ApiPublicDestinationCategoriesIndexRoute
+  ApiPublicOffersIndexRoute: typeof ApiPublicOffersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -274,6 +287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicGetPagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/pos-list': {
+      id: '/api/public/pos-list'
+      path: '/api/public/pos-list'
+      fullPath: '/api/public/pos-list'
+      preLoaderRoute: typeof ApiPublicPosListRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/update-component': {
       id: '/api/public/update-component'
       path: '/api/public/update-component'
@@ -302,6 +322,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicUpdatePageStatusRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/destination-categories/': {
+      id: '/api/public/destination-categories/'
+      path: '/api/public/destination-categories'
+      fullPath: '/api/public/destination-categories/'
+      preLoaderRoute: typeof ApiPublicDestinationCategoriesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/destination-categories/$id': {
+      id: '/api/public/destination-categories/$id'
+      path: '/api/public/destination-categories/$id'
+      fullPath: '/api/public/destination-categories/$id'
+      preLoaderRoute: typeof ApiPublicDestinationCategoriesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/offers/': {
       id: '/api/public/offers/'
       path: '/api/public/offers'
@@ -322,20 +356,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/offers/$id/status'
       preLoaderRoute: typeof ApiPublicOffersIdStatusRouteImport
       parentRoute: typeof ApiPublicOffersIdRoute
-    }
-    '/api/public/destination-categories/': {
-      id: '/api/public/destination-categories/'
-      path: '/api/public/destination-categories'
-      fullPath: '/api/public/destination-categories/'
-      preLoaderRoute: typeof ApiPublicDestinationCategoriesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/destination-categories/$id': {
-      id: '/api/public/destination-categories/$id'
-      path: '/api/public/destination-categories/$id'
-      fullPath: '/api/public/destination-categories/$id'
-      preLoaderRoute: typeof ApiPublicDestinationCategoriesIdRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -358,14 +378,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicGetHeaderRoute: ApiPublicGetHeaderRoute,
   ApiPublicGetPageRoute: ApiPublicGetPageRoute,
   ApiPublicGetPagesRoute: ApiPublicGetPagesRoute,
+  ApiPublicPosListRoute: ApiPublicPosListRoute,
   ApiPublicUpdateComponentRoute: ApiPublicUpdateComponentRoute,
   ApiPublicUpdateFooterRoute: ApiPublicUpdateFooterRoute,
   ApiPublicUpdateHeaderRoute: ApiPublicUpdateHeaderRoute,
   ApiPublicUpdatePageStatusRoute: ApiPublicUpdatePageStatusRoute,
-  ApiPublicOffersIdRoute: ApiPublicOffersIdRouteWithChildren,
-  ApiPublicOffersIndexRoute: ApiPublicOffersIndexRoute,
-  ApiPublicDestinationCategoriesIndexRoute: ApiPublicDestinationCategoriesIndexRoute,
   ApiPublicDestinationCategoriesIdRoute: ApiPublicDestinationCategoriesIdRoute,
+  ApiPublicOffersIdRoute: ApiPublicOffersIdRouteWithChildren,
+  ApiPublicDestinationCategoriesIndexRoute:
+    ApiPublicDestinationCategoriesIndexRoute,
+  ApiPublicOffersIndexRoute: ApiPublicOffersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
