@@ -9,13 +9,20 @@ CREATE TABLE IF NOT EXISTS public.destination_categories (
   slug text NOT NULL UNIQUE CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$' AND char_length(slug) BETWEEN 2 AND 40),
   label_en text NOT NULL CHECK (char_length(btrim(label_en)) BETWEEN 1 AND 80),
   label_ar text NOT NULL CHECK (char_length(btrim(label_ar)) BETWEEN 1 AND 80),
-  -- A Phosphor icon name ("MapPin", picked in the admin) or one of the original
-  -- curated keys ("landmarks", "mountains", ...) the seed rows use.
-  icon text NOT NULL DEFAULT 'landmarks' CHECK (icon ~ '^[A-Za-z][A-Za-z0-9]{0,63}$'),
+  icon text NOT NULL DEFAULT 'landmarks',
   position integer NOT NULL DEFAULT 0 CHECK (position >= 0 AND position <= 999),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- Icon: a Phosphor icon name ("MapPin", picked in the admin) or one of the
+-- original curated keys ("landmarks", "mountains", ...). Dropped and re-added so
+-- a table created by the first version of this file (which allowed only the 10
+-- curated keys) gets the new rule too.
+ALTER TABLE public.destination_categories
+  DROP CONSTRAINT IF EXISTS destination_categories_icon_check;
+ALTER TABLE public.destination_categories
+  ADD CONSTRAINT destination_categories_icon_check CHECK (icon ~ '^[A-Za-z][A-Za-z0-9]{0,63}$');
 
 CREATE INDEX IF NOT EXISTS destination_categories_position_idx
   ON public.destination_categories (position, slug);
