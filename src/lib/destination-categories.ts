@@ -3,20 +3,9 @@
  * Shape validated here and mirrored by destination_categories CHECKs.
  */
 
-export const CATEGORY_ICONS = [
-  "landmarks",
-  "religion",
-  "shopping",
-  "activities",
-  "nature",
-  "museums",
-  "mapPin",
-  "camera",
-  "mountains",
-  "storefront",
-] as const;
-
-export type CategoryIcon = (typeof CATEGORY_ICONS)[number];
+// A Phosphor icon name ("MapPin") or one of the original curated keys
+// ("landmarks", "mountains", ...). Same pattern as the table CHECK.
+const ICON_NAME = /^[A-Za-z][A-Za-z0-9]{0,63}$/;
 
 export const CATEGORY_COLUMNS = "id, slug, label_en, label_ar, icon, position, updated_at";
 
@@ -38,7 +27,7 @@ export type DestinationCategory = {
   slug: string;
   labelEn: string;
   labelAr: string;
-  icon: CategoryIcon;
+  icon: string;
   position: number;
   updatedAt: string;
 };
@@ -55,7 +44,7 @@ export function categoryPayload(row: DestinationCategoryRow): DestinationCategor
     slug: row.slug,
     labelEn: row.label_en,
     labelAr: row.label_ar,
-    icon: row.icon as CategoryIcon,
+    icon: row.icon,
     position: row.position,
     updatedAt: row.updated_at,
   };
@@ -87,8 +76,8 @@ export function parseCategoryInput(
   if (labelAr.length < 1 || labelAr.length > 80) {
     issues.push({ path: "labelAr", message: "Arabic label must be 1–80 characters" });
   }
-  if (!(CATEGORY_ICONS as readonly string[]).includes(icon)) {
-    issues.push({ path: "icon", message: "Choose one of the category icons" });
+  if (!ICON_NAME.test(icon)) {
+    issues.push({ path: "icon", message: "Choose an icon" });
   }
   const positionNumber = typeof position === "number" ? position : Number(position);
   if (!Number.isInteger(positionNumber) || positionNumber < 0 || positionNumber > 999) {
@@ -102,7 +91,7 @@ export function parseCategoryInput(
       slug,
       labelEn,
       labelAr,
-      icon: icon as CategoryIcon,
+      icon,
       position: positionNumber,
     },
   };
