@@ -30,6 +30,15 @@ function dbFailure(error: { code?: string; message?: string }) {
   if (error.code === "23505") {
     return publicError("Another category already uses this id", "duplicate_slug", 409);
   }
+  if (error.code === "23514") {
+    // Input passed this API's validation, so the table still has an older rule
+    // (e.g. the first version only allowed 10 curated icon keys).
+    return publicError(
+      "The database rejected this category — re-run the latest create_destination_categories migration",
+      "invalid_category",
+      400,
+    );
+  }
   if (/jwt|invalid claim|unauthori[sz]ed/i.test(msg) || error.code === "PGRST301") {
     return publicError(msg, "unauthorized", 401);
   }
