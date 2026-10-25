@@ -158,7 +158,7 @@ const QUICK_STYLE = {
 };
 
 const SERVICE_ROWS = [
-  { id: "b2bPortal", href: "/login-travel-agent", image: "b2b-portal.webp" },
+  { id: "b2bPortal", href: "/business-center/travel-agent-portal-login", image: "b2b-portal.webp" },
   { id: "agentGuide", href: "/coming-soon", image: "agent-guide.webp" },
   { id: "partnership", href: "/help/contact-us/forms", image: "partnership.webp" },
   { id: "apiIntegration", href: "/help/contact-us/forms", image: "api-integration.webp" },

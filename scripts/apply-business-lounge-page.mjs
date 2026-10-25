@@ -316,7 +316,7 @@ const PAGE_COPY = {
           title: "Marhaba Magazine",
           description:
             "Enjoy reading a distinguished collection of curated articles about international travel, business and tourism.",
-          href: "/travel-experience/traveler-magazine",
+          href: "/media-center/marhaba-magazine",
           imageAlt: "The Marhaba magazine cover",
         },
       ],
@@ -432,7 +432,7 @@ const PAGE_COPY = {
           image: "magazine.png",
           title: "مجلة مرحبا",
           description: "استمتع بقراءة مجموعة مميزة من المقالات المختارة عن السفر الدولي والأعمال والسياحة.",
-          href: "/travel-experience/traveler-magazine",
+          href: "/media-center/marhaba-magazine",
           imageAlt: "غلاف مجلة مرحبا",
         },
       ],

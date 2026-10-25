@@ -6,7 +6,9 @@
  * in the admin's Offers & Baggage Calculator. The website's Excess Baggage
  * Calculator asks for a quote (route + kg) and the price is computed here.
  */
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { publicError } from "@/lib/cms-public-http";
+import { isMissingAirportsColumn, normalizeAirports } from "@/lib/pos-airports";
 import { isMissingTable } from "@/lib/site-header";
 
 export const BAGGAGE_PRICE_TABLE = "baggage_segment_prices";
@@ -73,11 +75,11 @@ export function parseBaggagePriceInput(body: unknown): ParsedPrice {
 }
 
 /**
- * The website's From / To are POS countries (pos_list codes). Each maps to its
- * airports on the network, main airport first; prices stay per airport segment.
- * Keep in sync with the network (flychamadmin offers/constants/baggageSegments.js).
+ * POS → airports before migration 20261025120000 (pos_list.airports) has run.
+ * Only used while that column is missing; afterwards the admin's list at
+ * /cms2/pos is the source.
  */
-export const POS_AIRPORTS: Record<string, string[]> = {
+const LEGACY_POS_AIRPORTS: Record<string, string[]> = {
   sy: ["DAM", "ALP"],
   ae: ["DXB", "SHJ", "AUH"],
   kw: ["KWI"],
@@ -88,11 +90,27 @@ export const POS_AIRPORTS: Record<string, string[]> = {
   am: ["EVN"],
 };
 
-/** An airport code stays itself; a POS code becomes its airports. */
-export function airportsFor(code: string): string[] {
+/**
+ * An airport code stays itself; a POS code becomes its airports from
+ * pos_list.airports (main airport first). Throws the PostgREST error on a
+ * failed lookup.
+ */
+export async function airportsFor(supabase: SupabaseClient, code: string): Promise<string[]> {
   const value = code.trim();
   if (IATA.test(value.toUpperCase())) return [value.toUpperCase()];
-  return POS_AIRPORTS[value.toLowerCase()] ?? [];
+  const pos = value.toLowerCase();
+  if (!/^[a-z]{2}$/.test(pos)) return [];
+
+  const { data, error } = await supabase
+    .from("pos_list")
+    .select("airports")
+    .eq("code", pos)
+    .maybeSingle();
+  if (error) {
+    if (isMissingAirportsColumn(error)) return LEGACY_POS_AIRPORTS[pos] ?? [];
+    throw error;
+  }
+  return normalizeAirports(data?.airports).map((airport) => airport.code);
 }
 
 /** Every origin × destination pair, main airports first (the preferred quote). */

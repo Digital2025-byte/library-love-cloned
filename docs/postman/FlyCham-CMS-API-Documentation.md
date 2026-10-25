@@ -20,9 +20,12 @@ Companion file: **`FlyCham-CMS-API.postman_collection.json`** (import it into Po
 9. [Site header](#9-site-header)
 10. [Site footer](#10-site-footer)
 11. [Offers](#11-offers)
-12. [Error codes reference](#12-error-codes-reference)
-13. [Component types (`sectionId`) in use](#13-component-types-sectionid-in-use)
-14. [Known issues](#14-known-issues)
+12. [POS list (points of sale)](#12-pos-list-points-of-sale)
+13. [Baggage prices (excess baggage)](#13-baggage-prices-excess-baggage)
+14. [Destination categories](#14-destination-categories)
+15. [Error codes reference](#15-error-codes-reference)
+16. [Component types (`sectionId`) in use](#16-component-types-sectionid-in-use)
+17. [Known issues](#17-known-issues)
 
 ---
 
@@ -35,9 +38,9 @@ Companion file: **`FlyCham-CMS-API.postman_collection.json`** (import it into Po
    | `supabaseKey` | Supabase publishable (anon) key — `SUPABASE_PUBLISHABLE_KEY` in `cms/.env` |
    | `adminEmail` / `adminPassword` | A CMS admin account |
    | `baseUrl` | Already set to live. Use `http://localhost:3000` for local dev |
-3. Read requests (`get-pages`, `get-page`, `get-header`, `get-footer`) work immediately — no token.
+3. Read requests (`get-pages`, `get-page`, `get-header`, `get-footer`, `pos-list`, `baggage-prices`, `baggage-prices/quote`, `destination-categories`) work immediately — no token.
 4. For writes run **0. Auth → Sign in** once. Its script saves `accessToken`; all write requests already send `Authorization: Bearer {{accessToken}}`. The token lasts ~1 hour — run **Refresh token** when you get `401`.
-5. Scripts also save handy ids for you: `uid` (from *Get page* / *Create component*), `offerId` (from *List offers* / *Create offer*), `headerVersion`+`headerDocument`, `footerVersion`+`footerDocument`.
+5. Scripts also save handy ids for you: `uid` (from *Get page* / *Create component*), `offerId` (from *List offers* / *Create offer*), `headerVersion`+`headerDocument`, `footerVersion`+`footerDocument`, `posId` (from *Create POS* only) and `categoryId` (from *Create category* only — so their Update / Delete requests never hit a real row by accident).
 
 > ⚠️ **Writes hit the LIVE database.** The collection's default `slug` is `test-page`, a page that is safe to edit. Change it only when you mean to edit a real page.
 
@@ -98,7 +101,7 @@ Check the role: `POST {supabaseUrl}/rest/v1/rpc/is_admin` with the bearer → `t
 **Response**
 - Success bodies are JSON; most wrap the result as `{ "data": …, "meta": { "generatedAt": "…" } }` (`get-page` returns the page object at top level).
 - **CORS** is open: `Access-Control-Allow-Origin: *`, allowed headers `authorization, content-type, apikey`. Every route answers `OPTIONS` preflight.
-- **Caching:** `Cache-Control: no-store` everywhere **except** `get-header` (`public, max-age=60, stale-while-revalidate=300` — header edits can take up to 1 minute to show).
+- **Caching:** `Cache-Control: no-store` everywhere **except** `get-header` and anonymous `pos-list` (`public, max-age=60, stale-while-revalidate=300` — edits can take up to 1 minute to show).
 
 **Errors** — always the same shape:
 
@@ -121,7 +124,7 @@ Validation errors add `issues`, one per problem:
 }
 ```
 
-Full list: [§12 Error codes](#12-error-codes-reference).
+Full list: [§15 Error codes](#15-error-codes-reference).
 
 ---
 
@@ -168,6 +171,17 @@ pages 1 ──< page_components >── 1 components ── type → component_t
 | 14 | PUT | `/api/public/offers/{id}` | Admin | Replace offer |
 | 15 | DELETE | `/api/public/offers/{id}` | Admin | Delete offer |
 | 16 | PATCH | `/api/public/offers/{id}/status` | Admin | Change offer status |
+| 17 | GET | `/api/public/pos-list` | – (admin sees all) | List points of sale |
+| 18 | POST | `/api/public/pos-list` | Admin | Create POS |
+| 19 | PUT | `/api/public/pos-list` | Admin | Replace POS (`id` in body) |
+| 20 | DELETE | `/api/public/pos-list?id=` | Admin | Delete POS |
+| 21 | GET | `/api/public/baggage-prices` | – | List excess-baggage segment prices |
+| 22 | PUT | `/api/public/baggage-prices` | Admin | Set one segment's USD price per kg |
+| 23 | GET | `/api/public/baggage-prices/quote` | – | Excess-baggage quote (route + kg) |
+| 24 | GET | `/api/public/destination-categories` | – | List destination categories |
+| 25 | POST | `/api/public/destination-categories` | Admin | Create category |
+| 26 | PUT | `/api/public/destination-categories/{id}` | Admin | Replace category |
+| 27 | DELETE | `/api/public/destination-categories/{id}` | Admin | Delete category |
 
 ---
 
@@ -184,7 +198,7 @@ All pages ordered by `slug`, with a block count.
 | `lang` | no | `en` \| `ar` | When given, `componentCount` counts only that language's blocks. Unknown values are ignored. |
 | `status` | no | `draft` \| `published` | Filter by page status. |
 
-Anonymous callers only receive **published** pages; with an admin bearer you also get drafts.
+Anonymous callers only receive **published** pages; with an admin bearer you also get drafts. An expired or invalid bearer does **not** fail this list — it silently falls back to the anonymous (published-only) view.
 
 **Example**
 
@@ -211,8 +225,8 @@ GET /api/public/get-pages?lang=en
     }
   ],
   "meta": {
-    "count": 95,
-    "publishedCount": 95,
+    "count": 110,
+    "publishedCount": 110,
     "draftCount": 0,
     "filters": { "status": null, "lang": "en" },
     "lang": "en",
@@ -298,7 +312,7 @@ GET /api/public/get-page?slug=allowed-baggage&lang=en
 |---|---|
 | `uid` | Component id — use it in update/delete calls |
 | `linkId` | Id of the page↔component link |
-| `sectionId` / `sectionLabel` | Component type id / human name (see [§13](#13-component-types-sectionid-in-use)) |
+| `sectionId` / `sectionLabel` | Component type id / human name (see [§16](#16-component-types-sectionid-in-use)) |
 | `position` | Stored order value; `order` = 0-based index after sorting |
 | `languages` | Languages that have authored `content` for this component |
 | `style`, `content` | Per-language maps (see [§5](#5-how-content-is-modelled)). With `lang` and no content in that language → `content: {}` |
@@ -361,7 +375,7 @@ All three endpoints are **admin only** and return the resulting block in the sam
 | Field | Required | Type | Description |
 |---|---|---|---|
 | `slug` | **yes** | string | Page to add the block to |
-| `type` | **yes** | string | Component type (`sectionId`), e.g. `cta-banner`, `page-hero`, `faqs` — see [§13](#13-component-types-sectionid-in-use) |
+| `type` | **yes** | string | Component type (`sectionId`), e.g. `cta-banner`, `page-hero`, `faqs` — see [§16](#16-component-types-sectionid-in-use) |
 | `lang` | no | `"en"` \| `"ar"` | Language of the page the block belongs to. Default `en` |
 | `position` | no | integer | Order within that language. Default: after the last block |
 | `content` | no | object | `{ "en": { …fields of this type… } }` |
@@ -707,7 +721,203 @@ Permanently deletes. **200 OK** → `{ "data": { "id": "…" }, "meta" }`.
 
 ---
 
-## 12. Error codes reference
+## 12. POS list (points of sale)
+
+Countries the website sells in (table `pos_list`), managed in the admin. Drives the POS URL segment (`/<pos>/<lang>/…`), the header POS / currency switcher, and the From / To of the Excess Baggage Calculator.
+
+### 12.1 POS object
+
+```jsonc
+{
+  "code": "sy",
+  "nameEn": "Syria",
+  "nameAr": "سوريا",
+  "flagUrl": "https://xbqrfakpcisqunyugrqt.supabase.co/storage/v1/object/public/cms-media/flags/sy.svg",
+  "currency": "SYP",
+  "languages": ["en", "ar"],
+  "position": 1,
+  "airports": [            // main airport first; left out until migration 20261025120000 has run
+    { "code": "DAM", "nameEn": "Damascus", "nameAr": "دمشق" },
+    { "code": "ALP", "nameEn": "Aleppo", "nameAr": "حلب" }
+  ],
+
+  "id": "…uuid",          // ── admin bearer only ──
+  "isActive": true,
+  "createdAt": "…",
+  "updatedAt": "…"
+}
+```
+
+### 12.2 `GET /api/public/pos-list` — list
+
+Ordered by `position`, then `code`. **Anonymous:** active rows only, without `id` / `isActive` / timestamps, cached 60 s. **Admin bearer:** every row (inactive too) with the admin fields, not cached. An expired bearer gets `401` here (unlike `get-pages`) — refresh the token.
+
+**200 OK** → `{ "data": [ pos, … ], "meta": { "count": 10, "generatedAt": "…" } }` (live today: `sy ae kw iq om tr ly sa am gl`)
+
+### 12.3 `POST /api/public/pos-list` — create — **admin**
+
+| Field | Required | Rules |
+|---|---|---|
+| `code` | **yes** | 2 lower-case letters (`sy`, `ae`), unique |
+| `nameEn` | **yes** | Non-empty |
+| `nameAr` | no | Defaults to `nameEn` |
+| `flagUrl` | no | Image URL (empty string allowed) |
+| `currency` | **yes** | 3-letter ISO code (`SYP`, `AED`) — upper-cased |
+| `languages` | no | Subset of `["en", "ar"]` — default both |
+| `position` | no | Number — default `0` |
+| `isActive` | no | Default `true` |
+| `airports` | no | Array of `{ code, nameEn, nameAr? }`, max 20: `code` = 3-letter airport code (upper-cased), `nameEn` 1–80 chars, `nameAr` defaults to `nameEn`. First = main airport. Each airport may belong to **one** POS only (`409 duplicate_airport`). These are the Excess Baggage Calculator's From / To options |
+
+**201 Created** → `{ "data": pos, "meta" }` (admin shape).
+
+### 12.4 `PUT /api/public/pos-list` — replace — **admin**
+
+Body = `id` + **every** field above (same rules, `code` included). Omitted optional fields are reset to their defaults (`isActive` → `true`, `languages` → both, `position` → `0`), so send the full row — **except `airports`: left out = unchanged**. `400 invalid_id` without `id`, `404 not_found` for an unknown id.
+
+### 12.5 `DELETE /api/public/pos-list?id={id}` — **admin**
+
+**200 OK** → `{ "data": { "id": "…" }, "meta" }`. `400 invalid_id` without `id`, `404 not_found` for an unknown id.
+
+| Status | `code` | When (all POS writes) |
+|---|---|---|
+| 400 | `invalid_pos` | Bad `code` / `nameEn` / `currency`, or the database CHECK refused it |
+| 400 | `invalid_json` | Body not a JSON object |
+| 401 | `unauthorized` | Missing / expired token |
+| 403 | `forbidden` | Not an admin |
+| 409 | `duplicate_code` | Another POS already uses this `code` |
+| 409 | `duplicate_airport` | An airport in `airports` already belongs to another POS |
+| 409 | `migration_required` | `airports` sent before migration `20261025120000_add_pos_list_airports` has run |
+
+---
+
+## 13. Baggage prices (excess baggage)
+
+One USD price **per 1 kg** of excess baggage for each **directed** airport segment (table `baggage_segment_prices` — `DAM → KWI` and `KWI → DAM` are separate rows), set in the admin's *Offers & Baggage Calculator*. The website's Excess Baggage Calculator asks for a quote.
+
+### 13.1 `GET /api/public/baggage-prices` — list
+
+Every priced segment, ordered by origin then destination.
+
+```json
+{
+  "data": [
+    { "key": "DAM-KWI", "origin": "DAM", "destination": "KWI", "pricePerKgUsd": 205, "updatedAt": "2026-10-21T12:38:25.322+00:00" },
+    { "key": "KWI-DAM", "origin": "KWI", "destination": "DAM", "pricePerKgUsd": 30,  "updatedAt": "2026-10-21T12:38:46.542+00:00" }
+  ],
+  "meta": { "generatedAt": "…" }
+}
+```
+
+### 13.2 `PUT /api/public/baggage-prices` — set one segment — **admin**
+
+Create-or-replace (upsert on `origin` + `destination`). Returns the saved price.
+
+| Field | Required | Rules |
+|---|---|---|
+| `origin` | **yes** | 3-letter IATA code (upper-cased) |
+| `destination` | **yes** | 3-letter IATA code, ≠ `origin` |
+| `pricePerKgUsd` | **yes** | Number 0–100000, at most 2 decimals |
+
+```json
+{ "origin": "DAM", "destination": "DXB", "pricePerKgUsd": 12.5 }
+```
+
+Errors: `400 invalid_price` (validation), `401 unauthorized`, `403 forbidden` (not an admin).
+
+### 13.3 `GET /api/public/baggage-prices/quote` — quote
+
+| Query | Required | Values |
+|---|---|---|
+| `from` | **yes** | IATA airport code (`DAM` — what the website calculator sends) **or** POS code (`sy`, `ae`, …) |
+| `to` | **yes** | IATA airport code or POS code |
+| `weight` | **yes** | Excess kg, `> 0` and `≤ 1000` (decimals allowed) |
+
+**How it is priced.** An airport code is used as is. A POS code expands to that POS's `airports` from the POS list (§12, main airport first; before the airports migration, the built-in network map: sy DAM/ALP, ae DXB/SHJ/AUH, kw KWI, iq BGW/EBL, om MCT, tr SAW, ly MJI, am EVN). Every origin × destination pair is tried in that order and the **first priced segment wins**. `total = pricePerKgUsd × weight`, rounded to cents.
+
+**Example**
+
+```http
+GET /api/public/baggage-prices/quote?from=DAM&to=KWI&weight=5
+```
+
+```json
+{
+  "data": {
+    "from": "DAM", "to": "KWI",
+    "origin": "DAM", "destination": "KWI",
+    "weightKg": 5,
+    "pricePerKgUsd": 205,
+    "totalUsd": 1025,
+    "currency": "USD"
+  },
+  "meta": { "generatedAt": "…" }
+}
+```
+
+| Status | `code` | When |
+|---|---|---|
+| 400 | `invalid_quote` | `from` / `to` missing, or `weight` not in `(0, 1000]` |
+| 404 | `not_priced` | Unknown code (no airports), or no segment between them has a price yet |
+
+---
+
+## 14. Destination categories
+
+Shared categories (table `destination_categories`) used by the **Sights Grid** filter pills and the **Destination Things to Do** badges — managed in admin **/cms2/categories**. Blocks store the category `id`; labels come from here, so renaming a category updates every page.
+
+### 14.1 Category object
+
+```json
+{
+  "id": "f504a7b4-a651-4d3a-81bb-65022d1c0b2b",
+  "slug": "nature",
+  "labelEn": "Nature",
+  "labelAr": "الطبيعة",
+  "icon": "mountains",
+  "position": 1,
+  "updatedAt": "2026-10-22T07:05:13.024134+00:00"
+}
+```
+
+### 14.2 `GET /api/public/destination-categories` — list
+
+Ordered by `position`, then `slug`. **200 OK** → `{ "data": [ category, … ], "meta" }`.
+
+### 14.3 `POST /api/public/destination-categories` — create — **admin**
+
+| Field | Required | Rules |
+|---|---|---|
+| `slug` | **yes** | 2–40 chars: lower-case letters, digits, single hyphens. Unique |
+| `labelEn` | **yes** | 1–80 chars |
+| `labelAr` | **yes** | 1–80 chars |
+| `icon` | no | Phosphor icon name (`MapPin`, `Mountains`) or a curated key (`landmarks`, `mountains`, `museums`, …). Default `landmarks` |
+| `position` | **yes** | Integer 0–999 |
+
+```json
+{ "slug": "test-category", "labelEn": "Test category", "labelAr": "فئة تجريبية", "icon": "MapPin", "position": 99 }
+```
+
+**201 Created** → `{ "data": category, "meta" }`.
+
+### 14.4 `PUT /api/public/destination-categories/{id}` — replace — **admin**
+
+Same body and rules as create. `400 invalid_id` (not a uuid), `404 not_found`.
+
+### 14.5 `DELETE /api/public/destination-categories/{id}` — **admin**
+
+**200 OK** → `{ "data": { "id": "…" }, "meta" }`. Blocks that referenced it stop showing that pill / badge.
+
+| Status | `code` | When (all category writes) |
+|---|---|---|
+| 400 | `invalid_category` | Validation failed — `issues[]` with `path` = field name. Also when the DB CHECK refuses an icon (re-run the latest `create_destination_categories` migration) |
+| 400 | `invalid_json` / `invalid_id` | Body not JSON / id not a uuid |
+| 401 | `unauthorized` | Missing / expired token |
+| 403 | `forbidden` | Not an admin |
+| 409 | `duplicate_slug` | Another category already uses this `slug` |
+
+---
+
+## 15. Error codes reference
 
 | HTTP | `code` | Meaning |
 |---|---|---|
@@ -716,87 +926,101 @@ Permanently deletes. **200 OK** → `{ "data": { "id": "…" }, "meta" }`.
 | 400 | `invalid_lang`, `invalid_status`, `invalid_type`, `invalid_version`, `invalid_id` | Value not allowed |
 | 400 | `invalid_document` | Header/footer document failed validation (`issues[]`) |
 | 400 | `invalid_offer` | Offer failed validation (`issues[]`) |
+| 400 | `invalid_pos` | POS failed validation (bad `code` / `nameEn` / `currency`) |
+| 400 | `invalid_price` | Baggage segment price failed validation |
+| 400 | `invalid_quote` | Quote: `from` / `to` missing or `weight` out of range |
+| 400 | `invalid_category` | Destination category failed validation (`issues[]`) |
 | 401 | `unauthorized` | No `Authorization: Bearer …`, or token expired/invalid → sign in / refresh |
 | 403 | `forbidden` | Token is valid but the user isn't a CMS admin (or RLS refused) |
 | 404 | `page_not_found` | `get-page`: page missing, unpublished, or draft language |
-| 404 | `not_found` | Page / block / offer / header / footer not found |
+| 404 | `not_found` | Page / block / offer / header / footer / POS / category not found — or its table isn't migrated yet |
+| 404 | `not_priced` | Quote: no airports for a code, or no priced segment between them |
 | 409 | `version_conflict` | Header/footer saved by someone else meanwhile (`currentVersion` in body) |
-| 409 | `duplicate_code` | Offer code already exists |
+| 409 | `duplicate_code` | Offer code / POS code already exists |
+| 409 | `duplicate_slug` | Destination category slug already exists |
 | 409 | `offer_expired` | Tried to activate an expired offer |
 | 500 | `query_failed` | Unexpected database/server error (message has details) |
 
 ---
 
-## 13. Component types (`sectionId`) in use
+## 16. Component types (`sectionId`) in use
 
-The 106 block types currently used on live pages. Use these as `type` in `create-component`. Each type's `content`/`style` fields are defined by its React block in `flychamadmin/src/cms2` and `new_fly_cham` — copy an existing block via `get-page` to see them.
+The 115 block types currently used on the 110 live pages (collected from `get-page` on 2026-10-25). Use these as `type` in `create-component`. Each type's `content`/`style` fields are defined by its React block in `flychamadmin/src/cms2` and `new_fly_cham` — copy an existing block via `get-page` to see them.
 
 | `sectionId` | Label | `sectionId` | Label |
 |---|---|---|---|
-| about-values | About Values | journey-section | Journey Section |
-| airport-service-cards | Airport Service Cards | journey-stage-next-steps | Journey Stage Next Steps |
-| baggage-addons | Baggage Add-ons | landmark-feature | Landmark Feature |
-| baggage-allowance | Baggage Allowance | latest-news | Latest News |
-| baggage-allowance-breakdown | Baggage Allowance Breakdown | legal-document | Legal Document |
-| baggage-calculator | Baggage Calculator | legal-hub | Legal Hub |
-| baggage-resource-cards | Baggage Resource Cards | legal-more-info | Legal More Info |
-| baggage-route-summary | Baggage Route Summary | live-chat-banner | Live Chat Banner |
-| before-you-fly-services | Before You Fly Services | lounge-cards | Lounge Cards |
-| booking-lookup | Booking Lookup | magazine-banner | Magazine Banner |
-| booking-widget | Booking Widget | magazine-view | Magazine View |
-| breadcrumbs | Breadcrumbs | marhaba-intro | Marhaba Intro |
-| business-quick-access | Business Quick Access | media-cards | Media Cards |
-| cargo-info-cards | Cargo Info Cards | media-contact-cards | Media Contact Cards |
-| cargo-shipment-types | Cargo Shipment Types | media-newsletter-signup | Media Newsletter Signup |
-| cargo-stations-explorer | Cargo Stations Explorer | news-detail-figure | News Detail Figure |
-| catalog-cards | Catalog Cards | news-detail-gallery | News Detail Gallery |
-| cham-miles-join | Cham Miles Join | news-detail-header | News Detail Header |
-| class-panel | Class Panel | news-detail-paragraphs | News Detail Paragraphs |
-| coming-soon-hero | Coming Soon Hero | news-grid | News Grid |
-| contact-cards | Contact Cards | newsletter-form | Newsletter Form |
-| contact-forms | Contact Forms | newsletter-signup | Newsletter Signup |
-| cta-banner | CTA Banner | offer-baggage | Baggage Offer |
-| destination-hero-stats | Destination Hero + Stats | offer-cards | Offer Cards |
-| destination-narratives | Destination Narratives | offer-destination | Destination Offer |
-| destination-things-to-do | Destination Things to Do | offer-multi-city | Multi-city Offer |
-| destinations-explore | Destinations Explore | offer-one-way | One-way Offer |
-| destinations-inspiration | Destinations Inspiration | offer-payment-option | Payment Option Offer |
-| explore-marhaba | Explore Marhaba | offer-round-trip | Round-trip Offer |
-| faqs | FAQs | offer-seat | Seat Offer |
-| feature-highlight | Feature Highlight | office-directory | Office Directory |
-| fleet-explore | Fleet Explore | overlay-cards | Overlay Cards |
-| form-access | Form Access | page-hero | Page Hero |
-| forms-directory | Forms Directory | page-intro | Page Intro |
-| gateway-cards | Gateway Cards | page-media-hero | Page Media Hero |
-| get-help | Get Help | prohibited-items-grid | Prohibited Items Grid |
-| get-in-touch | Get In Touch | promo-banner | Promo Banner |
-| gsa-network | GSA Network | recent-news | Recent News |
-| help-categories | Help Categories | responsibility-sections | Responsibility Sections |
-| help-faqs | Help FAQs | route-map-explorer | Route Map Explorer |
-| home-about | Home About | search-console | Search Console |
-| home-cham-miles-banner | Home Cham Miles Banner | seat-choose | Seat Choose |
-| home-plan-trip | Home Plan Trip | seat-journey | Seat Journey |
-| home-travel-experience | Home Travel Experience | seat-plan | Seat Plan |
-| icon-tiles | Icon Tiles | service-benefits | Service Benefits |
-| info-accordion | Info Accordion | service-steps | Service Steps |
-| instructions-card | Instructions Card | sights-grid | Sights Grid |
-| site-map | Site Map | split-band | Split Band |
-| split-cards | Split Cards | support-steps | Support Steps |
-| title-with-list | Title With List | track-request | Track Request |
-| travel-agent-login | Travel Agent Login | travel-experience-cards | Travel Experience Cards |
-| travel-update-detail | Travel Update Detail | travel-update-hero | Travel Update Hero |
-| travel-updates-advisory | Travel Updates Advisory | travel-updates-list | Travel Updates List |
+| about-values | About Values | legal-document | Legal Document |
+| baggage-addons | Baggage Add-ons | legal-hub | Legal Hub |
+| baggage-allowance | Baggage Allowance | legal-more-info | Legal More Info |
+| baggage-allowance-breakdown | Baggage Allowance Breakdown | live-chat-banner | Live Chat Banner |
+| baggage-calculator | Baggage Calculator | lounge-cards | Lounge Cards |
+| baggage-calculator-page | Baggage Calculator Page | magazine-banner | Magazine Banner |
+| baggage-resource-cards | Baggage Resource Cards | magazine-view | Magazine View |
+| baggage-route-summary | Baggage Route Summary | marhaba-intro | Marhaba Intro |
+| before-you-fly-services | Before You Fly Services | media-cards | Media Cards |
+| book-a-flight-page | Book a Flight Page | media-contact-cards | Media Contact Cards |
+| booking-lookup | Booking Lookup | media-newsletter-signup | Media Newsletter Signup |
+| booking-search | Booking Search | news-detail-figure | News Detail Figure |
+| booking-widget | Booking Widget | news-detail-gallery | News Detail Gallery |
+| breadcrumbs | Breadcrumbs | news-detail-header | News Detail Header |
+| business-quick-access | Business Quick Access | news-detail-paragraphs | News Detail Paragraphs |
+| cargo-info-cards | Cargo Info Cards | news-grid | News Grid |
+| cargo-shipment-types | Cargo Shipment Types | newsletter-form | Newsletter Form |
+| cargo-stations-explorer | Cargo Stations Explorer | newsletter-signup | Newsletter Signup |
+| catalog-cards | Catalog Cards | not-found-hero | Not Found Hero |
+| cham-miles-join | Cham Miles Join | offer-baggage | Baggage Offer |
+| cham-miles-register | Cham Miles Register | offer-cards | Offer Cards |
+| class-panel | Class Panel | offer-destination | Destination Offer |
+| coming-soon-hero | Coming Soon Hero | offer-multi-city | Multi-city Offer |
+| contact-cards | Contact Cards | offer-one-way | One-way Offer |
+| contact-channels | Contact Channels | offer-payment-option | Payment Option Offer |
+| contact-forms | Contact Forms | offer-round-trip | Round-trip Offer |
+| cta-banner | CTA Banner | offer-seat | Seat Offer |
+| destination-hero-stats | Destination Hero + Stats | office-directory | Office Directory |
+| destination-narratives | Destination Narratives | overlay-cards | Overlay Cards |
+| destination-things-to-do | Destination Things to Do | page-hero | Page Hero |
+| destinations-explore | Destinations Explore | page-intro | Page Intro |
+| destinations-inspiration | Destinations Inspiration | page-media-hero | Page Media Hero |
+| excess-baggage-calculator | Excess Baggage Calculator | prohibited-items-grid | Prohibited Items Grid |
+| explore-marhaba | Explore Marhaba | promo-banner | Promo Banner |
+| faqs | FAQs | recent-news | Recent News |
+| feature-highlight | Feature Highlight | responsibility-sections | Responsibility Sections |
+| fleet-explore | Fleet Explore | route-map-explorer | Route Map Explorer |
+| flight-deals | Flight Deals | search-console | Search Console |
+| form-access | Form Access | seat-choose | Seat Choose |
+| forms-directory | Forms Directory | seat-journey | Seat Journey |
+| gateway-cards | Gateway Cards | seat-plan | Seat Plan |
+| get-help | Get Help | service-benefits | Service Benefits |
+| get-in-touch | Get In Touch | service-deals | Service Deals |
+| gsa-network | GSA Network | service-steps | Service Steps |
+| help-categories | Help Categories | sights-grid | Sights Grid |
+| help-faqs | Help FAQs | site-map | Site Map |
+| home-about | Home About | split-band | Split Band |
+| home-cham-miles-banner | Home Cham Miles Banner | split-cards | Split Cards |
+| home-extra-services | Home Extra Services | support-steps | Support Steps |
+| home-plan-trip | Home Plan Trip | title-with-list | Title With List |
+| home-travel-experience | Home Travel Experience | track-request | Track Request |
+| icon-tiles | Icon Tiles | travel-agent-login | Travel Agent Login |
+| info-accordion | Info Accordion | travel-experience-cards | Travel Experience Cards |
+| instructions-card | Instructions Card | travel-update-detail | Travel Update Detail |
+| journey-section | Journey Section | travel-update-hero | Travel Update Hero |
+| journey-stage-next-steps | Journey Stage Next Steps | travel-updates-advisory | Travel Updates Advisory |
+| landmark-feature | Landmark Feature | travel-updates-list | Travel Updates List |
+| latest-news | Latest News |  |  |
 
 ---
 
-## 14. Known issues
+## 17. Known issues
 
 | Issue | Effect | Fix |
 |---|---|---|
+| **POS airports need migration `20261025120000_add_pos_list_airports`** | Until it runs, `pos-list` leaves `airports` out (the website and admin fall back to the built-in network airports) and saving `airports` returns `409 migration_required` | Run the migration in the Supabase SQL editor; it seeds the network airports for sy, ae, kw, iq, om, tr, ly, am |
+| POS `sa` and `gl` have no airports | They don't appear in the Excess Baggage Calculator, and a quote by POS code `sa` / `gl` returns `404 not_priced` | Add their airports at admin **/cms2/pos** (after the migration) |
+| `PUT /pos-list` resets omitted fields | Sending only the changed field turns `isActive` back to `true`, `languages` to both, `position` to `0` | Always send the full row (the Postman request does). `airports` is the exception: left out = unchanged |
 | **Anonymous `GET /offers` fails** on the live database with `403 forbidden — permission denied for function is_admin` | The public website can't list offers yet (admins with a token are fine) | Grant `EXECUTE` on `public.is_admin()` to `anon`, or rewrite the offers read policy so anon doesn't call it — part of applying the offers migration on the hosted DB |
 | `get-header` is cached 60 s | A saved header can take up to a minute to show | By design (fast page loads). Footer is not cached |
 | Block reorder doesn't renumber siblings | Two blocks can share a position | Send new positions for every moved block |
 
 ---
 
-*Generated from the source of `cms/src/routes/api/public/*` and `cms/src/lib/*` on 2026-10-08.*
+*Generated from the source of `cms/src/routes/api/public/*` and `cms/src/lib/*` on 2026-10-08; updated 2026-10-25 (POS list, baggage prices, destination categories, live block types). Responses checked against the live API.*

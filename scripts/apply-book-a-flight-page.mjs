@@ -159,7 +159,7 @@ const PLAN_CARDS = [
   },
   {
     id: "seat",
-    href: "/travel-experience/seat-selection",
+    href: "/travel-experience/before-you-fly/seat-selection",
     imageUrl: `${MEDIA}/before-you-fly/seat-selection-v2.webp`,
   },
 ];

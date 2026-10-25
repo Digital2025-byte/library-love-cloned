@@ -180,7 +180,7 @@ function buildBlocks(lang) {
         title: magazine.title,
         description: magazine.description,
         cta: magazine.cta,
-        ctaHref: "/travel-experience/traveler-magazine",
+        ctaHref: "/media-center/marhaba-magazine",
         bgUrl: `${MEDIA}/magazine-bg.png`,
         coverUrl: `${MEDIA}/cover.png`,
         spread1Url: `${MEDIA}/spread-left.png`,

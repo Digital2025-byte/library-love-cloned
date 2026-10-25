@@ -119,7 +119,7 @@ const PAGES = {
   "travel-classes": { parents: [HOME, TE, OB] },
   "onboard-wi-fi": { parents: [HOME, TE, OB] },
   "after-travel": { parents: [HOME, TE], label: "afterTravel" },
-  "traveler-magazine": { parents: [HOME, TE], label: "travelerMagazine" },
+  // Marhaba Magazine now lives under /media-center (see apply scripts / pageHierarchy).
 };
 
 const auth = await (

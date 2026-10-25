@@ -235,7 +235,7 @@ const PAGE_COPY = {
         description:
           "Check the list of restricted and prohibited items to stay safe and compliant with international aviation regulations.",
         buttonLabel: "Find out more about our classes",
-        href: "/travel-experience/seat-selection",
+        href: "/travel-experience/before-you-fly/seat-selection",
         imageAlt: "A passenger using a laptop in a premium cabin seat",
       },
       {
@@ -312,7 +312,7 @@ const PAGE_COPY = {
         title: "درجات السفر لدينا",
         description: "راجع قائمة المواد المقيّدة والممنوعة لتبقى آمنًا وملتزمًا بأنظمة الطيران الدولية.",
         buttonLabel: "اعرف المزيد عن درجاتنا",
-        href: "/travel-experience/seat-selection",
+        href: "/travel-experience/before-you-fly/seat-selection",
         imageAlt: "راكب يستخدم حاسوبًا محمولًا في مقعد مقصورة مميزة",
       },
       {

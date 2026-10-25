@@ -15,10 +15,11 @@ import { createCmsClient } from "../get-pages";
 
 /**
  * GET /api/public/baggage-prices/quote?from=&to=&weight=
- *   The website's Excess Baggage Calculator. `from` / `to` are POS codes
- *   (e.g. sy, ae — mapped to their airports, main airport first) or airport
- *   codes (e.g. DAM, DXB); `weight` is the excess kg. The price is the admin's
- *   USD price per kg for the first priced segment × weight:
+ *   The website's Excess Baggage Calculator. `from` / `to` are airport codes
+ *   (e.g. DAM, DXB — what the calculator sends) or POS codes (e.g. sy, ae —
+ *   mapped to their airports from pos_list.airports, main airport first);
+ *   `weight` is the excess kg. The price is the admin's USD price per kg for
+ *   the first priced segment × weight:
  *   `{ from, to, origin, destination, weightKg, pricePerKgUsd, totalUsd, currency }`.
  *   404 `not_priced` when no segment between them has a price yet.
  */
@@ -37,15 +38,24 @@ async function handleQuote(request: Request) {
     );
   }
 
-  const origins = airportsFor(from);
-  const destinations = airportsFor(to);
-  const candidates = candidateSegments(origins, destinations);
-  if (!candidates.length) {
-    return publicError(`No route between "${from}" and "${to}"`, "not_priced", 404);
-  }
-
   try {
-    const { data, error } = await createCmsClient(request)
+    const supabase = createCmsClient(request);
+    let origins: string[];
+    let destinations: string[];
+    try {
+      [origins, destinations] = await Promise.all([
+        airportsFor(supabase, from),
+        airportsFor(supabase, to),
+      ]);
+    } catch (lookupError) {
+      return baggageDbFailure(lookupError as { code?: string; message: string });
+    }
+    const candidates = candidateSegments(origins, destinations);
+    if (!candidates.length) {
+      return publicError(`No route between "${from}" and "${to}"`, "not_priced", 404);
+    }
+
+    const { data, error } = await supabase
       .from(BAGGAGE_PRICE_TABLE)
       .select(BAGGAGE_PRICE_COLUMNS)
       .in("origin", origins)

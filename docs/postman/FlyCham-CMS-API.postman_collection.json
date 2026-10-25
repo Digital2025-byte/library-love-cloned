@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Fly Cham CMS API",
-    "description": "REST API of the Fly Cham CMS backend (`cms/`, TanStack Start on the VPS) — pages & blocks, site header/footer, offers.\n\nBase URL (live): https://cms-api.cms-flycham.alpatrose.com — local dev: http://localhost:3000 (change `baseUrl`).\n\n**Auth:** reads are public. Writes need `Authorization: Bearer <Supabase access token>` of a CMS admin — run *0. Auth → Sign in* first (fill `supabaseKey`, `adminEmail`, `adminPassword`).\n\n**Errors** always look like `{ \"error\": { \"message\": \"…\", \"code\": \"…\" } }` (+ `issues[]` for validation errors).\n\nFull reference: `FlyCham-CMS-API-Documentation.md` (same folder).",
+    "description": "REST API of the Fly Cham CMS backend (`cms/`, TanStack Start on the VPS) — pages & blocks, site header/footer, offers, POS list, excess-baggage prices, destination categories.\n\nBase URL (live): https://cms-api.cms-flycham.alpatrose.com — local dev: http://localhost:3000 (change `baseUrl`).\n\n**Auth:** reads are public. Writes need `Authorization: Bearer <Supabase access token>` of a CMS admin — run *0. Auth → Sign in* first (fill `supabaseKey`, `adminEmail`, `adminPassword`).\n\n**Errors** always look like `{ \"error\": { \"message\": \"…\", \"code\": \"…\" } }` (+ `issues[]` for validation errors).\n\nFull reference: `FlyCham-CMS-API-Documentation.md` (same folder).",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -89,6 +89,16 @@
       "key": "footerDocument",
       "value": "{}",
       "description": "Set by Get footer (JSON)"
+    },
+    {
+      "key": "posId",
+      "value": "",
+      "description": "POS row id — set by Create POS"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "description": "Destination category id — set by Create category"
     }
   ],
   "item": [
@@ -1587,6 +1597,561 @@
               ]
             },
             "description": "Permanently deletes the offer. Returns `{ data: { id } }`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6. POS list (points of sale)",
+      "description": "Points of sale (table `pos_list`): country, flag, currency and site languages. Drives the website's POS URL segment (`/<pos>/<lang>/…`), the header POS / currency switcher and the From / To of the Excess Baggage Calculator.\n\nReads: anonymous callers get **active** rows only (response cached 60 s); an admin bearer gets every row plus `id`, `isActive`, `createdAt`, `updatedAt`. Writes are admin-only. `posId` is saved by *Create POS* only, so Update / Delete never touch a real row by accident.",
+      "item": [
+        {
+          "name": "List POS (public)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/pos-list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "pos-list"
+              ]
+            },
+            "description": "Active POS only, ordered by `position` then `code`. Shape: `{ code, nameEn, nameAr, flagUrl, currency, languages, position }`. Cached `public, max-age=60, stale-while-revalidate=300`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List POS (admin, all rows)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/pos-list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "pos-list"
+              ]
+            },
+            "description": "Same endpoint with the admin bearer: every row (inactive too) plus `id`, `isActive`, `createdAt`, `updatedAt`. Not cached. An expired token returns `401` — run *Refresh token*."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create POS",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/pos-list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "pos-list"
+              ]
+            },
+            "description": "`code`: 2 lower-case letters, unique (`409 duplicate_code`). `nameEn` required; `nameAr` defaults to `nameEn`. `currency`: 3-letter ISO (upper-cased). `languages`: subset of `en`, `ar` (default both). `position`: number (default 0). `isActive`: default `true` — the example creates it inactive so it stays off the website. `airports`: `[{ code, nameEn, nameAr? }]` (3-letter codes, first = main airport; each airport belongs to one POS only → `409 duplicate_airport`). Saves `posId`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"jo\",\n  \"nameEn\": \"Jordan\",\n  \"nameAr\": \"الأردن\",\n  \"flagUrl\": \"https://xbqrfakpcisqunyugrqt.supabase.co/storage/v1/object/public/cms-media/flags/jo.svg\",\n  \"currency\": \"JOD\",\n  \"languages\": [\n    \"en\",\n    \"ar\"\n  ],\n  \"position\": 99,\n  \"isActive\": false,\n  \"airports\": [\n    {\n      \"code\": \"AMM\",\n      \"nameEn\": \"Amman\",\n      \"nameAr\": \"عمّان\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "const r = pm.response.json();",
+                  "if (r.data && r.data.id) pm.collectionVariables.set('posId', r.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update POS",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/pos-list",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "pos-list"
+              ]
+            },
+            "description": "Full replace by `id` (in the body). Send **every** field — same rules as create, `code` included; omitted fields fall back to their defaults (`isActive` → true, `languages` → en+ar, `position` → 0). `airports` is the exception: left out = unchanged.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{posId}}\",\n  \"code\": \"jo\",\n  \"nameEn\": \"Jordan (edited)\",\n  \"nameAr\": \"الأردن\",\n  \"flagUrl\": \"https://xbqrfakpcisqunyugrqt.supabase.co/storage/v1/object/public/cms-media/flags/jo.svg\",\n  \"currency\": \"JOD\",\n  \"languages\": [\n    \"en\",\n    \"ar\"\n  ],\n  \"position\": 99,\n  \"isActive\": false,\n  \"airports\": [\n    {\n      \"code\": \"AMM\",\n      \"nameEn\": \"Amman\",\n      \"nameAr\": \"عمّان\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete POS",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/pos-list?id={{posId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "pos-list"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "{{posId}}",
+                  "description": "POS row id (uuid)"
+                }
+              ]
+            },
+            "description": "Deletes the row. Returns `{ data: { id } }`. `404 not_found` for an unknown id."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Baggage prices (excess baggage)",
+      "description": "USD price for **1 kg** of excess baggage per directed airport segment (table `baggage_segment_prices`, e.g. DAM → DXB), set in the admin's *Offers & Baggage Calculator*. The website's Excess Baggage Calculator calls *Quote* with the two POS countries and the kg.\n\nReads are public. *Set segment price* is admin-only and writes the LIVE price — the website uses it immediately.",
+      "item": [
+        {
+          "name": "List segment prices",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/baggage-prices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "baggage-prices"
+              ]
+            },
+            "description": "Every priced segment, ordered by origin then destination: `[{ key: \"DAM-KWI\", origin, destination, pricePerKgUsd, updatedAt }]`. Segments without a row have no price yet."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Set segment price",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/baggage-prices",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "baggage-prices"
+              ]
+            },
+            "description": "Create or replace one directed segment's price (upsert on origin + destination). `origin` / `destination`: 3-letter IATA codes, must differ. `pricePerKgUsd`: 0–100000, at most 2 decimals. Returns the saved price. ⚠ Live data.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"origin\": \"DAM\",\n  \"destination\": \"DXB\",\n  \"pricePerKgUsd\": 12.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quote (POS codes)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/baggage-prices/quote?from=sy&to=kw&weight=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "baggage-prices",
+                "quote"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "sy",
+                  "description": "POS code (sy, ae, kw, iq, om, tr, ly, am) or IATA airport code"
+                },
+                {
+                  "key": "to",
+                  "value": "kw",
+                  "description": "POS code or IATA airport code"
+                },
+                {
+                  "key": "weight",
+                  "value": "5",
+                  "description": "Excess kg, > 0 and ≤ 1000"
+                }
+              ]
+            },
+            "description": "What the website calls. Each POS code expands to its `airports` from the POS list (main airport first, e.g. `ae` → DXB, SHJ, AUH); the first priced origin × destination pair wins. Returns `{ from, to, origin, destination, weightKg, pricePerKgUsd, totalUsd, currency: \"USD\" }`. `404 not_priced` when no segment between them has a price."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200 or 404\", () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Quote (airport codes)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/baggage-prices/quote?from=DAM&to=KWI&weight=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "baggage-prices",
+                "quote"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "DAM",
+                  "description": "IATA airport code (or POS code)"
+                },
+                {
+                  "key": "to",
+                  "value": "KWI",
+                  "description": "IATA airport code (or POS code)"
+                },
+                {
+                  "key": "weight",
+                  "value": "10",
+                  "description": "Excess kg, > 0 and ≤ 1000"
+                }
+              ]
+            },
+            "description": "What the website calculator sends: exact airports (its From / To list every POS airport) — only that one segment is checked."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200 or 404\", () => pm.expect(pm.response.code).to.be.oneOf([200, 404]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Destination categories",
+      "description": "Shared categories (table `destination_categories`) used by the **Sights Grid** filter pills and the **Destination Things to Do** badges — managed in admin **/cms2/categories**. `icon` is a Phosphor icon name (e.g. `MapPin`) or one of the original curated keys (`landmarks`, `mountains`, `museums`, …).\n\nReads are public; writes are admin-only. `categoryId` is saved by *Create category* only.",
+      "item": [
+        {
+          "name": "List categories",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/destination-categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "destination-categories"
+              ]
+            },
+            "description": "Ordered by `position` then `slug`: `[{ id, slug, labelEn, labelAr, icon, position, updatedAt }]`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/destination-categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "destination-categories"
+              ]
+            },
+            "description": "`slug`: 2–40 chars, lower-case letters / digits / single hyphens, unique (`409 duplicate_slug`). `labelEn`, `labelAr`: 1–80 chars. `icon`: Phosphor name or curated key (default `landmarks`). `position`: integer 0–999. Validation errors → `400 invalid_category` with `issues[]`. Saves `categoryId`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"test-category\",\n  \"labelEn\": \"Test category\",\n  \"labelAr\": \"فئة تجريبية\",\n  \"icon\": \"MapPin\",\n  \"position\": 99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 201\", () => pm.expect(pm.response.code).to.be.oneOf([201]));",
+                  "const r = pm.response.json();",
+                  "if (r.data && r.data.id) pm.collectionVariables.set('categoryId', r.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/destination-categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "destination-categories",
+                "{{categoryId}}"
+              ]
+            },
+            "description": "Full replace — same body and rules as create. `400 invalid_id` if the id is not a uuid, `404 not_found` if unknown.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"slug\": \"test-category\",\n  \"labelEn\": \"Test category (edited)\",\n  \"labelAr\": \"فئة تجريبية\",\n  \"icon\": \"MapPin\",\n  \"position\": 99\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"status is 200\", () => pm.expect(pm.response.code).to.be.oneOf([200]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/public/destination-categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "public",
+                "destination-categories",
+                "{{categoryId}}"
+              ]
+            },
+            "description": "Deletes the category. Returns `{ data: { id } }`. Blocks that referenced it simply stop showing that badge / pill."
           },
           "response": [],
           "event": [

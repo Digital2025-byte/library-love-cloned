@@ -1,19 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { publicError, publicJson, requireBearer } from "@/lib/cms-public-http";
+import {
+  isMissingAirportsColumn,
+  normalizeAirports,
+  parseAirportsInput,
+  type PosAirport,
+} from "@/lib/pos-airports";
 import { createCmsClient } from "./get-pages";
 
 /**
  * GET  /api/public/pos-list — active POS (anon). With admin Bearer → every row.
  * POST /api/public/pos-list — create (admin)
- * PUT  /api/public/pos-list — update by `id` (admin)
+ * PUT  /api/public/pos-list — update by `id` (admin); `airports` left out = unchanged
  * DELETE /api/public/pos-list?id= — delete (admin)
  *
- *   { data: [{ id?, code, nameEn, nameAr, flagUrl, currency, languages, position, isActive? }] }
+ *   { data: [{ id?, code, nameEn, nameAr, flagUrl, currency, languages, position,
+ *              airports: [{ code, nameEn, nameAr }], isActive? }] }
  */
 
-const COLUMNS =
+const BASE_COLUMNS =
   "id, code, name_en, name_ar, flag_url, currency, languages, position, is_active, created_at, updated_at";
+const COLUMNS = `${BASE_COLUMNS}, airports`;
 
 type PosRow = {
   id: string;
@@ -25,9 +33,23 @@ type PosRow = {
   languages: string[] | null;
   position: number;
   is_active: boolean;
+  airports?: unknown;
   created_at?: string;
   updated_at?: string;
 };
+
+type DbResult = { data: unknown; error: { code?: string; message: string } | null };
+
+/**
+ * Run a select with the airports column, and again without it while
+ * migration 20261025120000 hasn't run (a failed statement writes nothing, so
+ * retrying an insert / update is safe).
+ */
+async function withAirportsFallback(run: (columns: string) => PromiseLike<DbResult>) {
+  const first = await run(COLUMNS);
+  if (first.error && isMissingAirportsColumn(first.error)) return run(BASE_COLUMNS);
+  return first;
+}
 
 const isMissingTable = (error: { code?: string; message?: string }) =>
   error.code === "42P01" ||
@@ -44,6 +66,8 @@ function posPayload(row: PosRow, { includeAdmin = false } = {}) {
     languages:
       Array.isArray(row.languages) && row.languages.length ? row.languages : ["en", "ar"],
     position: row.position,
+    // Left out while the airports migration hasn't run, so clients use their defaults.
+    ...("airports" in row ? { airports: normalizeAirports(row.airports) } : {}),
   };
   if (!includeAdmin) return base;
   return {
@@ -66,6 +90,13 @@ function dbFailure(error: { code?: string; message?: string }) {
   if (isMissingTable(error)) {
     return publicError("POS list table does not exist yet", "not_found", 404);
   }
+  if (isMissingAirportsColumn(error)) {
+    return publicError(
+      "Saving airports needs migration 20261025120000_add_pos_list_airports — run it in the Supabase SQL editor",
+      "migration_required",
+      409,
+    );
+  }
   if (error.code === "23505") {
     return publicError("Another POS already uses this code", "duplicate_code", 409);
   }
@@ -84,6 +115,31 @@ async function requireAdmin(supabase: SupabaseClient) {
   return null;
 }
 
+/** An airport belongs to one POS only (the quote maps POS → airports). */
+async function airportConflict(
+  supabase: SupabaseClient,
+  airports: PosAirport[] | undefined,
+  selfId?: string,
+) {
+  if (!airports?.length) return null;
+  const { data, error } = await supabase.from("pos_list").select("id, code, airports");
+  // A missing column fails the write itself, with the migration hint.
+  if (error) return isMissingAirportsColumn(error) ? null : dbFailure(error);
+  const mine = new Set(airports.map((airport) => airport.code));
+  for (const row of (data ?? []) as { id: string; code: string; airports: unknown }[]) {
+    if (row.id === selfId) continue;
+    const clash = normalizeAirports(row.airports).find((airport) => mine.has(airport.code));
+    if (clash) {
+      return publicError(
+        `Airport ${clash.code} already belongs to POS "${row.code}"`,
+        "duplicate_airport",
+        409,
+      );
+    }
+  }
+  return null;
+}
+
 function str(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -97,6 +153,7 @@ type PosInput = {
   languages?: unknown;
   position?: unknown;
   isActive?: unknown;
+  airports?: unknown;
 };
 
 function parsePosInput(body: unknown, { requireCode = true } = {}) {
@@ -130,9 +187,19 @@ function parsePosInput(body: unknown, { requireCode = true } = {}) {
       response: publicError("currency must be a 3-letter ISO code (e.g. SYP)", "invalid_pos", 400),
     };
   }
+  // Optional: left out (older admin builds) keeps the stored airports.
+  let airports: PosAirport[] | undefined;
+  if (input.airports !== undefined) {
+    const parsed = parseAirportsInput(input.airports);
+    if (!parsed.ok) {
+      return { ok: false as const, response: publicError(parsed.message, "invalid_pos", 400) };
+    }
+    airports = parsed.airports;
+  }
 
   return {
     ok: true as const,
+    airports,
     row: {
       ...(requireCode ? { code } : {}),
       name_en: nameEn,
@@ -142,6 +209,7 @@ function parsePosInput(body: unknown, { requireCode = true } = {}) {
       languages: languages.length ? languages : ["en", "ar"],
       position: Number.isFinite(position) ? position : 0,
       is_active: isActive,
+      ...(airports ? { airports } : {}),
     },
   };
 }
@@ -155,14 +223,15 @@ async function handleList(request: Request) {
       admin = isAdmin === true;
     }
 
-    let query = supabase
-      .from("pos_list")
-      .select(COLUMNS)
-      .order("position", { ascending: true })
-      .order("code", { ascending: true });
-    if (!admin) query = query.eq("is_active", true);
-
-    const { data, error } = await query;
+    const { data, error } = await withAirportsFallback((columns) => {
+      let query = supabase
+        .from("pos_list")
+        .select(columns)
+        .order("position", { ascending: true })
+        .order("code", { ascending: true });
+      if (!admin) query = query.eq("is_active", true);
+      return query;
+    });
     if (error) return dbFailure(error);
     const rows = (data ?? []) as PosRow[];
     return publicJson(
@@ -201,12 +270,12 @@ async function handleCreate(request: Request) {
     const supabase = createCmsClient(request);
     const forbidden = await requireAdmin(supabase);
     if (forbidden) return forbidden;
+    const conflict = await airportConflict(supabase, parsed.airports);
+    if (conflict) return conflict;
 
-    const { data, error } = await supabase
-      .from("pos_list")
-      .insert(parsed.row)
-      .select(COLUMNS)
-      .single();
+    const { data, error } = await withAirportsFallback((columns) =>
+      supabase.from("pos_list").insert(parsed.row).select(columns).single(),
+    );
     if (error) return dbFailure(error);
     return publicJson(
       { data: posPayload(data as PosRow, { includeAdmin: true }), meta: { generatedAt: new Date().toISOString() } },
@@ -241,13 +310,12 @@ async function handleUpdate(request: Request) {
     const supabase = createCmsClient(request);
     const forbidden = await requireAdmin(supabase);
     if (forbidden) return forbidden;
+    const conflict = await airportConflict(supabase, parsed.airports, id);
+    if (conflict) return conflict;
 
-    const { data, error } = await supabase
-      .from("pos_list")
-      .update(parsed.row)
-      .eq("id", id)
-      .select(COLUMNS)
-      .maybeSingle();
+    const { data, error } = await withAirportsFallback((columns) =>
+      supabase.from("pos_list").update(parsed.row).eq("id", id).select(columns).maybeSingle(),
+    );
     if (error) return dbFailure(error);
     if (!data) return publicError(`POS not found: ${id}`, "not_found", 404);
     return publicJson({

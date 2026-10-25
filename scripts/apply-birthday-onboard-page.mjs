@@ -34,7 +34,7 @@ const FOLDER = "birthday-onboard";
 const MEDIA = `${url}/storage/v1/object/public/cms-media/${FOLDER}`;
 const ASSETS = resolve(process.cwd(), "../new_fly_cham/src/assets/images/birthday-onboard");
 const HUB = "/travel-experience/on-board";
-const MAGAZINE = "/travel-experience/traveler-magazine";
+const MAGAZINE = "/media-center/marhaba-magazine";
 const UPLOADS = ["hero.png", "cake.png", "special.png", "little.png", "toys.png", "entertainment.png", "meals.png", "magazine.png"];
 
 const COMPONENT_TYPES = [
