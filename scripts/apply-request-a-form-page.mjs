@@ -1,15 +1,8 @@
 /**
- * One-off admin task for the Request-a-form dynamic page — one CMS page shared
- * at /help/contact-us/forms/request-a-form (?form=<formId> selects the form):
- *   1. Register the `form-access` component type (+ ensure cta-banner exists).
- *   2. Ensure the "request-a-form" page row exists.
- *   3. Seed EN + AR blocks when a language has none:
- *        0 cta-banner   ("Need Urgent Help?" — same look as the /forms page)
- *        1 form-access  ("Find your booking" PNR + last name card)
- *
- * Copy comes from new_fly_cham's `help.urgent.*` / `forms.access.*` strings.
- *
- * Frontend URL: /help/contact-us/forms/request-a-form   CMS slug: request-a-form
+ * One-off admin task for the Request-a-form hub page
+ * (/help/contact-us/forms/request-a-form). Per-form pages are seeded by
+ * apply-form-request-pages.mjs (`/forms/request-<slug>`); legacy `?form=` on
+ * this hub redirects there.
  *
  *   node scripts/apply-request-a-form-page.mjs
  */
@@ -316,4 +309,4 @@ for (const lang of ["en", "ar"]) {
   }
 }
 
-console.log("Done. Open /en/help/contact-us/forms/request-a-form?form=bookingChange");
+console.log("Done. Prefer /en/help/contact-us/forms/request-booking-change");

@@ -7,26 +7,38 @@ import {
   airportsFor,
   baggageDbFailure,
   candidateSegments,
+  currencyForPos,
   roundUsd,
   type BaggagePriceRow,
 } from "@/lib/baggage-prices";
+import { convertAmount, getExchangeRate } from "@/lib/currency-exchange";
 import { okJson, serverFailure } from "@/lib/offers-http";
 import { createCmsClient } from "../get-pages";
 
 /**
- * GET /api/public/baggage-prices/quote?from=&to=&weight=
+ * GET /api/public/baggage-prices/quote?from=&to=&weight=&pos=
  *   The website's Excess Baggage Calculator. `from` / `to` are airport codes
  *   (e.g. DAM, DXB — what the calculator sends) or POS codes (e.g. sy, ae —
  *   mapped to their airports from pos_list.airports, main airport first);
  *   `weight` is the excess kg. The price is the admin's USD price per kg for
- *   the first priced segment × weight:
- *   `{ from, to, origin, destination, weightKg, pricePerKgUsd, totalUsd, currency }`.
+ *   the first priced segment × weight.
+ *
+ *   `pos` is the point of sale in the website's URL (`/kw/en/...`). Its
+ *   booking currency (pos_list.currency) is what the visitor pays in, so the
+ *   USD total is converted with the booking platform's live rate and returned
+ *   as `total` / `currency`. The USD figures stay in the response, and a POS
+ *   we cannot convert for simply keeps `currency: "USD"` — the calculator
+ *   still answers.
+ *
+ *   `{ from, to, pos, origin, destination, weightKg, pricePerKgUsd, totalUsd,
+ *      pricePerKg, total, currency, rate, rateUpdatedAt, converted }`
  *   404 `not_priced` when no segment between them has a price yet.
  */
 async function handleQuote(request: Request) {
   const params = new URL(request.url).searchParams;
   const from = params.get("from")?.trim() ?? "";
   const to = params.get("to")?.trim() ?? "";
+  const pos = params.get("pos")?.trim().toLowerCase() ?? "";
   const weightKg = Number(params.get("weight"));
 
   if (!from || !to) return publicError("from and to are required", "invalid_quote", 400);
@@ -73,15 +85,34 @@ async function handleQuote(request: Request) {
     }
 
     const pricePerKgUsd = Number(priced.price_per_kg_usd);
+    const totalUsd = roundUsd(pricePerKgUsd * weightKg);
+
+    // What the visitor pays in: the POS's booking currency, converted with the
+    // booking platform's rate. Anything missing leaves the quote in USD and
+    // says why in `rateError`, rather than failing the calculator.
+    const posCurrency = pos ? await currencyForPos(supabase, pos) : null;
+    const exchange = posCurrency
+      ? await getExchangeRate("USD", posCurrency)
+      : ({ ok: false, reason: pos ? "unknown_pos" : "no_pos" } as const);
+    const rate = exchange.ok ? exchange.rate : null;
+
     return okJson({
       from,
       to,
+      pos: pos || null,
+      posCurrency,
       origin: priced.origin,
       destination: priced.destination,
       weightKg,
       pricePerKgUsd,
-      totalUsd: roundUsd(pricePerKgUsd * weightKg),
-      currency: "USD",
+      totalUsd,
+      pricePerKg: rate ? convertAmount(pricePerKgUsd, rate.rate) : pricePerKgUsd,
+      total: rate ? convertAmount(totalUsd, rate.rate) : totalUsd,
+      currency: rate ? rate.toCurrency : "USD",
+      rate: rate ? rate.rate : null,
+      rateUpdatedAt: rate ? rate.updatedAt : null,
+      converted: Boolean(rate) && rate!.toCurrency !== "USD",
+      rateError: exchange.ok ? null : exchange.reason,
     });
   } catch (error) {
     return serverFailure(error, "Quote failed");

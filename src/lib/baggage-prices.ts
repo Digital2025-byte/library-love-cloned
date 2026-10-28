@@ -113,6 +113,30 @@ export async function airportsFor(supabase: SupabaseClient, code: string): Promi
   return normalizeAirports(data?.airports).map((airport) => airport.code);
 }
 
+/**
+ * The booking currency of a POS (`pos_list.currency`, e.g. `kw` → `KWD`), or
+ * `null` when the code is unknown or the row has none. Used to convert a USD
+ * price into what the visitor on `/<pos>/` pays in.
+ */
+export async function currencyForPos(
+  supabase: SupabaseClient,
+  code: string,
+): Promise<string | null> {
+  const pos = String(code ?? "").trim().toLowerCase();
+  if (!/^[a-z]{2}$/.test(pos)) return null;
+
+  const { data, error } = await supabase
+    .from("pos_list")
+    .select("currency")
+    .eq("code", pos)
+    .maybeSingle();
+  // A failed lookup is not worth failing the quote over — it stays in USD.
+  if (error) return null;
+
+  const currency = String(data?.currency ?? "").trim().toUpperCase();
+  return /^[A-Z]{3}$/.test(currency) ? currency : null;
+}
+
 /** Every origin × destination pair, main airports first (the preferred quote). */
 export function candidateSegments(origins: string[], destinations: string[]) {
   return origins.flatMap((origin) =>

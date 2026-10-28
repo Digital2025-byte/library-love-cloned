@@ -35,7 +35,7 @@ const FOLDER = "wheelchair-service";
 const MEDIA = `${url}/storage/v1/object/public/cms-media/${FOLDER}`;
 const ASSETS = resolve(process.cwd(), "../new_fly_cham/src/assets/images/wheelchair-service");
 const PAGE_HREF = "/travel-experience/at-the-airport/wheelchair-service";
-const FORM_HREF = "/help/contact-us/forms/request-a-form?form=wheelchair";
+const FORM_HREF = "/help/contact-us/forms/request-wheelchair";
 const UPLOADS = ["hero.png", "steps.png", "request.png", "marhaba.png", "lounge.png"];
 
 const COMPONENT_TYPES = [

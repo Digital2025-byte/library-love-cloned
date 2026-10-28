@@ -64,13 +64,20 @@ function rest(method, path, body) {
   });
 }
 
-const REQUEST = "/help/contact-us/forms/request-a-form";
 const SUPPORT_FORM_IDS = [
   "bookingChange", "transportation", "nameCorrection", "paymentIssue",
   "unaccompaniedMinor", "groupTravel", "corporateTravel", "wheelchair",
   "oxygenService", "refund", "ancillaryRefund", "lostBaggage", "delayedBaggage",
   "claimMiles", "feedback", "apiIntegration", "partnerGsa", "cargo",
 ];
+
+function formIdToRequestSlug(formId) {
+  const kebab = String(formId)
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+  return `request-${kebab}`;
+}
 const FORM_ALIASES = {
   payment: "paymentIssue",
   baggage: "delayedBaggage",
@@ -107,12 +114,16 @@ function matchId(form) {
 }
 
 function requestHref(formId) {
-  return `${REQUEST}?form=${encodeURIComponent(formId)}`;
+  return `/help/contact-us/forms/${formIdToRequestSlug(formId)}`;
 }
 
 function resolveHref(form) {
   const href = String(form?.href || "").trim();
-  if (href.includes("request-a-form")) {
+  if (href.includes("request-a-form") || /\/forms\/request-/.test(href)) {
+    const prefixed = href.match(/\/forms\/(request-[^/?#]+)/);
+    if (prefixed && prefixed[1] !== "request-a-form") {
+      return `/help/contact-us/forms/${prefixed[1]}`.split("?")[0];
+    }
     const query = href.match(/[?&]form=([^&#]+)/);
     if (query) return requestHref(decodeURIComponent(query[1]));
     const matched = matchId(form);

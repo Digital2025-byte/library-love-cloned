@@ -437,7 +437,7 @@ function buildBlocks(lang) {
         imageUrl: `${MEDIA}/request.webp`,
         imageAlt: copy.intro.imageAlt,
         buttonLabel: copy.intro.buttonLabel,
-        buttonHref: "/help/contact-us/forms/request-a-form?form=oxygenService",
+        buttonHref: "/help/contact-us/forms/request-oxygen-service",
         buttonIcon: "ArrowRight",
         links: [],
       },
