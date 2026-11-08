@@ -8,7 +8,7 @@
  * full map so editors can load and save every locale in one round trip.
  */
 
-export const SUPPORTED_LANGUAGES = ["en", "ar"] as const;
+export const SUPPORTED_LANGUAGES = ["en", "ar", "tr", "de", "hy"] as const;
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const DEFAULT_LANGUAGE: SupportedLanguage = "en";
@@ -17,6 +17,8 @@ const RTL_LANGUAGES = new Set<SupportedLanguage>(["ar"]);
 /**
  * Normalize a raw `?lang=` value to a supported language, or `null` when it is
  * absent / unrecognized (callers then fall back to returning the full map).
+ * An explicitly requested, supported locale is returned as-is — it never
+ * resolves to English, so writes for tr/de/hy land on that locale.
  */
 export function normalizeLang(value: unknown): SupportedLanguage | null {
   if (typeof value !== "string") return null;
