@@ -6,7 +6,7 @@ import {
   writeFailure,
 } from "@/lib/cms-public-http";
 import { createCmsClient } from "./get-pages";
-import { normalizeLang } from "@/lib/cms-languages";
+import { normalizeLang, SUPPORTED_LANGUAGES } from "@/lib/cms-languages";
 import {
   descriptionWithDraftLang,
   draftLangsFromDescription,
@@ -101,7 +101,11 @@ async function handleStatus(request: Request) {
     );
   }
   if (body.lang !== undefined && !lang) {
-    return publicError("Field `lang` must be one of: en, ar", "invalid_lang", 400);
+    return publicError(
+      `Field \`lang\` must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
+      "invalid_lang",
+      400,
+    );
   }
 
   try {

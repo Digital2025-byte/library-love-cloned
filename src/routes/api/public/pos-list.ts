@@ -8,6 +8,7 @@ import {
   type PosAirport,
 } from "@/lib/pos-airports";
 import { createCmsClient } from "./get-pages";
+import { SUPPORTED_LANGUAGES } from "@/lib/cms-languages";
 
 /**
  * GET  /api/public/pos-list — active POS (anon). With admin Bearer → every row.
@@ -64,7 +65,9 @@ function posPayload(row: PosRow, { includeAdmin = false } = {}) {
     flagUrl: row.flag_url ?? "",
     currency: row.currency,
     languages:
-      Array.isArray(row.languages) && row.languages.length ? row.languages : ["en", "ar"],
+      Array.isArray(row.languages) && row.languages.length
+        ? row.languages
+        : [...SUPPORTED_LANGUAGES],
     position: row.position,
     // Left out while the airports migration hasn't run, so clients use their defaults.
     ...("airports" in row ? { airports: normalizeAirports(row.airports) } : {}),
@@ -167,8 +170,8 @@ function parsePosInput(body: unknown, { requireCode = true } = {}) {
   const flagUrl = str(input.flagUrl);
   const currency = str(input.currency).toUpperCase();
   const languages = (Array.isArray(input.languages) ? input.languages : [])
-    .map((l) => String(l))
-    .filter((l) => l === "en" || l === "ar");
+    .map((l) => String(l).trim().toLowerCase())
+    .filter((l) => (SUPPORTED_LANGUAGES as readonly string[]).includes(l));
   const position = Number(input.position);
   const isActive = input.isActive !== false;
 
@@ -206,7 +209,7 @@ function parsePosInput(body: unknown, { requireCode = true } = {}) {
       name_ar: nameAr,
       flag_url: flagUrl,
       currency,
-      languages: languages.length ? languages : ["en", "ar"],
+      languages: languages.length ? languages : [...SUPPORTED_LANGUAGES],
       position: Number.isFinite(position) ? position : 0,
       is_active: isActive,
       ...(airports ? { airports } : {}),

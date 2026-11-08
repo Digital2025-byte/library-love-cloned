@@ -88,7 +88,7 @@ export const Route = createFileRoute("/api/public/get-page")({
         const { data, error } = await supabase
           .from("pages")
           .select(
-            "id, slug, label, description, status, created_at, updated_at, page_components(id, position, lang, components(id, type, style, content, created_at, updated_at, component_types(label)))"
+            "id, slug, label, description, status, lang, created_at, updated_at, page_components(id, position, lang, components(id, type, style, content, created_at, updated_at, component_types(label)))"
           )
           .eq("slug", slug)
           .maybeSingle();
@@ -200,12 +200,22 @@ export const Route = createFileRoute("/api/public/get-page")({
           ];
         });
 
+        // An explicitly requested locale is echoed in meta.lang even when the
+        // page has no blocks in it — translationMissing tells the caller the
+        // translation does not exist yet instead of silently serving English.
+        const translationMissing =
+          lang !== null &&
+          !((data.page_components ?? []) as PageComponentRow[]).some(
+            (link) => link.lang === lang,
+          );
+
         return json({
           id: data.id,
           slug: data.slug,
           label: data.label,
           description: data.description,
           status: data.status,
+          lang: data.lang ?? null,
           isPublished: data.status === "published",
           draftLangs,
           createdAt: data.created_at,
@@ -217,6 +227,7 @@ export const Route = createFileRoute("/api/public/get-page")({
             languages: [...new Set(blocks.flatMap((b) => b.languages))],
             lang,
             dir: dirFor(lang),
+            translationMissing,
             generatedAt: new Date().toISOString(),
           },
         });

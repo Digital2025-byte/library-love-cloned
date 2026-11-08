@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { normalizeLang } from "@/lib/cms-languages";
+import { normalizeLang, SUPPORTED_LANGUAGES } from "@/lib/cms-languages";
 import { publicError, publicJson, requireBearer } from "@/lib/cms-public-http";
 import {
   SITE_HEADER_COLUMNS,
@@ -79,7 +79,11 @@ async function handleUpdate(request: Request) {
 
   const lang = normalizeLang(body.lang);
   if (!lang) {
-    return publicError('Field `lang` must be "en" or "ar"', "invalid_lang", 400);
+    return publicError(
+      `Field \`lang\` must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
+      "invalid_lang",
+      400,
+    );
   }
 
   // `version` = the version the editor loaded. null/absent means "I started
