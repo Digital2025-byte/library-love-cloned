@@ -6,7 +6,7 @@ import {
   writeFailure,
 } from "@/lib/cms-public-http";
 import { createCmsClient } from "./get-pages";
-import { normalizeLang } from "@/lib/cms-languages";
+import { normalizeLang, SUPPORTED_LANGUAGES } from "@/lib/cms-languages";
 import {
   descriptionWithDraftLang,
   draftLangsFromDescription,
