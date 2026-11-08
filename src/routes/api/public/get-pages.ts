@@ -93,6 +93,7 @@ type PageRow = {
   label: string;
   description: string | null;
   status: string;
+  lang: string | null;
   created_at: string;
   updated_at: string;
   page_components: { id: string; lang: string }[] | null;
@@ -111,13 +112,17 @@ export const Route = createFileRoute("/api/public/get-pages")({
 
         const supabase = createCmsClient(request);
         const selectCols =
-          "id, slug, label, description, status, created_at, updated_at, page_components(id, lang)";
+          "id, slug, label, description, status, lang, created_at, updated_at, page_components(id, lang)";
         let query = supabase
           .from("pages")
           .select(selectCols)
           .order("slug", { ascending: true });
 
         if (status) query = query.eq("status", status);
+        // `lang=tr` returns only pages available in Turkish: single-language
+        // tr pages plus bilingual (lang IS NULL) ones. Never falls back to
+        // English-only pages.
+        if (lang) query = query.or(`lang.is.null,lang.eq.${lang}`);
 
         let { data, error } = await query;
 
@@ -130,6 +135,7 @@ export const Route = createFileRoute("/api/public/get-pages")({
             .select(selectCols)
             .order("slug", { ascending: true });
           if (status) anonQuery = anonQuery.eq("status", status);
+          if (lang) anonQuery = anonQuery.or(`lang.is.null,lang.eq.${lang}`);
           ({ data, error } = await anonQuery);
         }
 
@@ -159,6 +165,7 @@ export const Route = createFileRoute("/api/public/get-pages")({
             label: page.label,
             description: page.description,
             status: page.status,
+            lang: page.lang,
             isPublished: page.status === "published",
             draftLangs,
             componentCount,

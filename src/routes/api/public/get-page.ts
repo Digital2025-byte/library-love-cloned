@@ -88,7 +88,7 @@ export const Route = createFileRoute("/api/public/get-page")({
         const { data, error } = await supabase
           .from("pages")
           .select(
-            "id, slug, label, description, status, created_at, updated_at, page_components(id, position, lang, components(id, type, style, content, created_at, updated_at, component_types(label)))"
+            "id, slug, label, description, status, lang, created_at, updated_at, page_components(id, position, lang, components(id, type, style, content, created_at, updated_at, component_types(label)))"
           )
           .eq("slug", slug)
           .maybeSingle();
