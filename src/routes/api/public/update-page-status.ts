@@ -101,7 +101,11 @@ async function handleStatus(request: Request) {
     );
   }
   if (body.lang !== undefined && !lang) {
-    return publicError("Field `lang` must be one of: en, ar", "invalid_lang", 400);
+    return publicError(
+      `Field \`lang\` must be one of: ${SUPPORTED_LANGUAGES.join(", ")}`,
+      "invalid_lang",
+      400,
+    );
   }
 
   try {

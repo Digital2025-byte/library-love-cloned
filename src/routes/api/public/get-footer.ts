@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { DEFAULT_LANGUAGE, normalizeLang } from "@/lib/cms-languages";
+import { DEFAULT_LANGUAGE, normalizeLang, SUPPORTED_LANGUAGES } from "@/lib/cms-languages";
 import { publicError, publicJson } from "@/lib/cms-public-http";
 import {
   SITE_FOOTER_COLUMNS,
@@ -23,7 +23,11 @@ export const Route = createFileRoute("/api/public/get-footer")({
         const raw = new URL(request.url).searchParams.get("lang");
         const lang = raw === null || raw.trim() === "" ? DEFAULT_LANGUAGE : normalizeLang(raw);
         if (!lang) {
-          return publicError(`Unsupported lang "${raw}" (expected en or ar)`, "invalid_lang", 400);
+          return publicError(
+            `Unsupported lang "${raw}" (expected one of: ${SUPPORTED_LANGUAGES.join(", ")})`,
+            "invalid_lang",
+            400,
+          );
         }
 
         let row: SiteFooterRow | null;
