@@ -10,10 +10,52 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
+      baggage_segment_prices: {
+        Row: {
+          destination: string
+          origin: string
+          price_per_kg_usd: number
+          updated_at: string
+        }
+        Insert: {
+          destination: string
+          origin: string
+          price_per_kg_usd: number
+          updated_at?: string
+        }
+        Update: {
+          destination?: string
+          origin?: string
+          price_per_kg_usd?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      block_library_overrides: {
+        Row: {
+          label: string
+          preview_url: string
+          section_id: string
+          updated_at: string
+        }
+        Insert: {
+          label?: string
+          preview_url?: string
+          section_id: string
+          updated_at?: string
+        }
+        Update: {
+          label?: string
+          preview_url?: string
+          section_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       component_types: {
         Row: {
           id: string
@@ -70,6 +112,138 @@ export type Database = {
           },
         ]
       }
+      destination_categories: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          label_ar: string
+          label_en: string
+          position: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          label_ar: string
+          label_en: string
+          position?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          label_ar?: string
+          label_en?: string
+          position?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      media_alt_texts: {
+        Row: {
+          alt_ar: string
+          alt_en: string
+          bucket_id: string
+          object_path: string
+          updated_at: string
+        }
+        Insert: {
+          alt_ar?: string
+          alt_en?: string
+          bucket_id: string
+          object_path: string
+          updated_at?: string
+        }
+        Update: {
+          alt_ar?: string
+          alt_en?: string
+          bucket_id?: string
+          object_path?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      offers: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          currency: string | null
+          description_ar: string | null
+          description_en: string | null
+          details: Json
+          discount_type: string
+          discount_value: number
+          ends_at: string | null
+          expiry_type: string
+          id: string
+          max_passengers: number | null
+          starts_at: string
+          status: string
+          title_ar: string
+          title_en: string
+          trip_type: string | null
+          type: string
+          updated_at: string
+          updated_by: string | null
+          used_passengers: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          details?: Json
+          discount_type: string
+          discount_value: number
+          ends_at?: string | null
+          expiry_type: string
+          id?: string
+          max_passengers?: number | null
+          starts_at?: string
+          status?: string
+          title_ar: string
+          title_en: string
+          trip_type?: string | null
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+          used_passengers?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          details?: Json
+          discount_type?: string
+          discount_value?: number
+          ends_at?: string | null
+          expiry_type?: string
+          id?: string
+          max_passengers?: number | null
+          starts_at?: string
+          status?: string
+          title_ar?: string
+          title_en?: string
+          trip_type?: string | null
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+          used_passengers?: number
+        }
+        Relationships: []
+      }
       page_components: {
         Row: {
           component_id: string
@@ -121,7 +295,6 @@ export type Database = {
           description: string | null
           id: string
           label: string
-          lang: string | null
           slug: string
           status: string
           updated_at: string
@@ -131,7 +304,6 @@ export type Database = {
           description?: string | null
           id?: string
           label: string
-          lang?: string | null
           slug: string
           status?: string
           updated_at?: string
@@ -141,9 +313,53 @@ export type Database = {
           description?: string | null
           id?: string
           label?: string
-          lang?: string | null
           slug?: string
           status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pos_list: {
+        Row: {
+          airports: Json
+          code: string
+          created_at: string
+          currency: string
+          flag_url: string
+          id: string
+          is_active: boolean
+          languages: string[]
+          name_ar: string
+          name_en: string
+          position: number
+          updated_at: string
+        }
+        Insert: {
+          airports?: Json
+          code: string
+          created_at?: string
+          currency: string
+          flag_url?: string
+          id?: string
+          is_active?: boolean
+          languages?: string[]
+          name_ar: string
+          name_en: string
+          position?: number
+          updated_at?: string
+        }
+        Update: {
+          airports?: Json
+          code?: string
+          created_at?: string
+          currency?: string
+          flag_url?: string
+          id?: string
+          is_active?: boolean
+          languages?: string[]
+          name_ar?: string
+          name_en?: string
+          position?: number
           updated_at?: string
         }
         Relationships: []
@@ -229,6 +445,10 @@ export type Database = {
     }
     Functions: {
       component_is_public: { Args: { _component_id: string }; Returns: boolean }
+      consume_offer_passengers: {
+        Args: { p_offer_id: string; p_passengers: number }
+        Returns: number
+      }
       ensure_first_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
